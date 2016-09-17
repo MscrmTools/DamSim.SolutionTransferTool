@@ -1,4 +1,6 @@
-﻿namespace DamSim.SolutionTransferTool
+﻿using System.Windows.Forms;
+
+namespace DamSim.SolutionTransferTool
 {
     partial class SolutionTransferTool
     {
@@ -97,7 +99,7 @@
             this.tsbDownloadLogFile});
             this.toolStrip1.Location = new System.Drawing.Point(0, 0);
             this.toolStrip1.Name = "toolStrip1";
-            this.toolStrip1.Size = new System.Drawing.Size(1200, 32);
+            this.toolStrip1.Size = new System.Drawing.Size(800, 25);
             this.toolStrip1.TabIndex = 0;
             this.toolStrip1.Text = "toolStrip1";
             // 
@@ -107,7 +109,7 @@
             this.btnClose.Image = ((System.Drawing.Image)(resources.GetObject("btnClose.Image")));
             this.btnClose.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.btnClose.Name = "btnClose";
-            this.btnClose.Size = new System.Drawing.Size(24, 29);
+            this.btnClose.Size = new System.Drawing.Size(23, 22);
             this.btnClose.Text = "Close this tool";
             this.btnClose.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
             this.btnClose.Click += new System.EventHandler(this.BtnCloseClick);
@@ -115,35 +117,35 @@
             // toolStripSeparator1
             // 
             this.toolStripSeparator1.Name = "toolStripSeparator1";
-            this.toolStripSeparator1.Size = new System.Drawing.Size(6, 32);
+            this.toolStripSeparator1.Size = new System.Drawing.Size(6, 25);
             // 
             // tsbLoadSolutions
             // 
             this.tsbLoadSolutions.Image = ((System.Drawing.Image)(resources.GetObject("tsbLoadSolutions.Image")));
             this.tsbLoadSolutions.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbLoadSolutions.Name = "tsbLoadSolutions";
-            this.tsbLoadSolutions.Size = new System.Drawing.Size(154, 29);
+            this.tsbLoadSolutions.Size = new System.Drawing.Size(114, 22);
             this.tsbLoadSolutions.Text = "Load Solutions";
             this.tsbLoadSolutions.Click += new System.EventHandler(this.TsbLoadSolutionsClick);
             // 
             // toolStripSeparator2
             // 
             this.toolStripSeparator2.Name = "toolStripSeparator2";
-            this.toolStripSeparator2.Size = new System.Drawing.Size(6, 32);
+            this.toolStripSeparator2.Size = new System.Drawing.Size(6, 25);
             // 
             // tsbTransfertSolution
             // 
             this.tsbTransfertSolution.Image = ((System.Drawing.Image)(resources.GetObject("tsbTransfertSolution.Image")));
             this.tsbTransfertSolution.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbTransfertSolution.Name = "tsbTransfertSolution";
-            this.tsbTransfertSolution.Size = new System.Drawing.Size(166, 29);
+            this.tsbTransfertSolution.Size = new System.Drawing.Size(125, 22);
             this.tsbTransfertSolution.Text = "Transfer solution";
             this.tsbTransfertSolution.Click += new System.EventHandler(this.TsbTransfertSolutionClick);
             // 
             // toolStripSeparator3
             // 
             this.toolStripSeparator3.Name = "toolStripSeparator3";
-            this.toolStripSeparator3.Size = new System.Drawing.Size(6, 32);
+            this.toolStripSeparator3.Size = new System.Drawing.Size(6, 25);
             // 
             // tsbDownloadLogFile
             // 
@@ -152,7 +154,7 @@
             this.tsbDownloadLogFile.Image = ((System.Drawing.Image)(resources.GetObject("tsbDownloadLogFile.Image")));
             this.tsbDownloadLogFile.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbDownloadLogFile.Name = "tsbDownloadLogFile";
-            this.tsbDownloadLogFile.Size = new System.Drawing.Size(164, 29);
+            this.tsbDownloadLogFile.Size = new System.Drawing.Size(120, 22);
             this.tsbDownloadLogFile.Text = "Download Log File";
             this.tsbDownloadLogFile.ToolTipText = "This button allows you to donwload the log file from the last solution imported w" +
     "ith errors";
@@ -168,11 +170,9 @@
             this.grpSourceSolution.Controls.Add(this.lblSource);
             this.grpSourceSolution.Controls.Add(this.lstSourceSolutions);
             this.grpSourceSolution.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.grpSourceSolution.Location = new System.Drawing.Point(4, 42);
-            this.grpSourceSolution.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.grpSourceSolution.Location = new System.Drawing.Point(3, 27);
             this.grpSourceSolution.Name = "grpSourceSolution";
-            this.grpSourceSolution.Padding = new System.Windows.Forms.Padding(4, 5, 4, 5);
-            this.grpSourceSolution.Size = new System.Drawing.Size(1191, 348);
+            this.grpSourceSolution.Size = new System.Drawing.Size(794, 226);
             this.grpSourceSolution.TabIndex = 1;
             this.grpSourceSolution.TabStop = false;
             this.grpSourceSolution.Text = "Solutions";
@@ -185,30 +185,27 @@
             this.panel1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.panel1.Controls.Add(this.label2);
             this.panel1.Controls.Add(this.pictureBox1);
-            this.panel1.Location = new System.Drawing.Point(9, 32);
-            this.panel1.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.panel1.Location = new System.Drawing.Point(6, 21);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(1168, 34);
+            this.panel1.Size = new System.Drawing.Size(779, 23);
             this.panel1.TabIndex = 5;
             // 
             // label2
             // 
             this.label2.AutoSize = true;
             this.label2.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.label2.Location = new System.Drawing.Point(39, 6);
-            this.label2.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.label2.Location = new System.Drawing.Point(26, 4);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(534, 25);
+            this.label2.Size = new System.Drawing.Size(354, 15);
             this.label2.TabIndex = 6;
             this.label2.Text = "Click on \"Load Solutions\" to display and select solution to transfer";
             // 
             // pictureBox1
             // 
             this.pictureBox1.Image = ((System.Drawing.Image)(resources.GetObject("pictureBox1.Image")));
-            this.pictureBox1.Location = new System.Drawing.Point(4, 5);
-            this.pictureBox1.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.pictureBox1.Location = new System.Drawing.Point(3, 3);
             this.pictureBox1.Name = "pictureBox1";
-            this.pictureBox1.Size = new System.Drawing.Size(24, 25);
+            this.pictureBox1.Size = new System.Drawing.Size(16, 16);
             this.pictureBox1.TabIndex = 5;
             this.pictureBox1.TabStop = false;
             // 
@@ -216,10 +213,9 @@
             // 
             this.label1.AutoSize = true;
             this.label1.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.label1.Location = new System.Drawing.Point(4, 72);
-            this.label1.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.label1.Location = new System.Drawing.Point(3, 47);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(190, 25);
+            this.label1.Size = new System.Drawing.Size(127, 15);
             this.label1.TabIndex = 4;
             this.label1.Text = "Source environnement";
             // 
@@ -228,10 +224,9 @@
             this.lblSource.AutoSize = true;
             this.lblSource.Font = new System.Drawing.Font("Segoe UI", 8.25F);
             this.lblSource.ForeColor = System.Drawing.Color.Red;
-            this.lblSource.Location = new System.Drawing.Point(204, 75);
-            this.lblSource.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.lblSource.Location = new System.Drawing.Point(136, 49);
             this.lblSource.Name = "lblSource";
-            this.lblSource.Size = new System.Drawing.Size(134, 23);
+            this.lblSource.Size = new System.Drawing.Size(89, 13);
             this.lblSource.TabIndex = 3;
             this.lblSource.Text = "Not selected yet";
             // 
@@ -250,11 +245,9 @@
             this.lstSourceSolutions.Font = new System.Drawing.Font("Segoe UI", 8.25F);
             this.lstSourceSolutions.FullRowSelect = true;
             this.lstSourceSolutions.HideSelection = false;
-            this.lstSourceSolutions.Location = new System.Drawing.Point(9, 100);
-            this.lstSourceSolutions.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.lstSourceSolutions.Location = new System.Drawing.Point(6, 65);
             this.lstSourceSolutions.Name = "lstSourceSolutions";
-            this.lstSourceSolutions.Size = new System.Drawing.Size(1166, 232);
-            this.lstSourceSolutions.Sorting = System.Windows.Forms.SortOrder.Ascending;
+            this.lstSourceSolutions.Size = new System.Drawing.Size(779, 152);
             this.lstSourceSolutions.TabIndex = 2;
             this.lstSourceSolutions.UseCompatibleStateImageBehavior = false;
             this.lstSourceSolutions.View = System.Windows.Forms.View.Details;
@@ -278,7 +271,7 @@
             // installedon
             // 
             this.installedon.Text = "Installed on";
-            this.installedon.Width = 80;
+            this.installedon.Width = 95;
             // 
             // publisher
             // 
@@ -293,10 +286,9 @@
             // btnSelectTarget
             // 
             this.btnSelectTarget.Font = new System.Drawing.Font("Segoe UI", 8.25F);
-            this.btnSelectTarget.Location = new System.Drawing.Point(9, 75);
-            this.btnSelectTarget.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.btnSelectTarget.Location = new System.Drawing.Point(6, 49);
             this.btnSelectTarget.Name = "btnSelectTarget";
-            this.btnSelectTarget.Size = new System.Drawing.Size(166, 39);
+            this.btnSelectTarget.Size = new System.Drawing.Size(111, 25);
             this.btnSelectTarget.TabIndex = 3;
             this.btnSelectTarget.Text = "Select target";
             this.btnSelectTarget.UseVisualStyleBackColor = true;
@@ -310,11 +302,9 @@
             this.grpTargetSelection.Controls.Add(this.lblTarget);
             this.grpTargetSelection.Controls.Add(this.btnSelectTarget);
             this.grpTargetSelection.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.grpTargetSelection.Location = new System.Drawing.Point(4, 400);
-            this.grpTargetSelection.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.grpTargetSelection.Location = new System.Drawing.Point(3, 260);
             this.grpTargetSelection.Name = "grpTargetSelection";
-            this.grpTargetSelection.Padding = new System.Windows.Forms.Padding(4, 5, 4, 5);
-            this.grpTargetSelection.Size = new System.Drawing.Size(1191, 126);
+            this.grpTargetSelection.Size = new System.Drawing.Size(794, 82);
             this.grpTargetSelection.TabIndex = 4;
             this.grpTargetSelection.TabStop = false;
             this.grpTargetSelection.Text = "Target environment";
@@ -327,20 +317,18 @@
             this.panel2.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.panel2.Controls.Add(this.label3);
             this.panel2.Controls.Add(this.pictureBox2);
-            this.panel2.Location = new System.Drawing.Point(9, 31);
-            this.panel2.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.panel2.Location = new System.Drawing.Point(6, 20);
             this.panel2.Name = "panel2";
-            this.panel2.Size = new System.Drawing.Size(1168, 34);
+            this.panel2.Size = new System.Drawing.Size(779, 23);
             this.panel2.TabIndex = 6;
             // 
             // label3
             // 
             this.label3.AutoSize = true;
             this.label3.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.label3.Location = new System.Drawing.Point(39, 6);
-            this.label3.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.label3.Location = new System.Drawing.Point(26, 4);
             this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(697, 25);
+            this.label3.Size = new System.Drawing.Size(464, 15);
             this.label3.TabIndex = 6;
             this.label3.Text = "Click on \"Select target\" to select the organization where to import the selected " +
     "solution";
@@ -348,10 +336,9 @@
             // pictureBox2
             // 
             this.pictureBox2.Image = ((System.Drawing.Image)(resources.GetObject("pictureBox2.Image")));
-            this.pictureBox2.Location = new System.Drawing.Point(4, 5);
-            this.pictureBox2.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.pictureBox2.Location = new System.Drawing.Point(3, 3);
             this.pictureBox2.Name = "pictureBox2";
-            this.pictureBox2.Size = new System.Drawing.Size(24, 25);
+            this.pictureBox2.Size = new System.Drawing.Size(16, 16);
             this.pictureBox2.TabIndex = 5;
             this.pictureBox2.TabStop = false;
             // 
@@ -360,10 +347,9 @@
             this.lblTarget.AutoSize = true;
             this.lblTarget.Font = new System.Drawing.Font("Segoe UI", 8.25F);
             this.lblTarget.ForeColor = System.Drawing.Color.Red;
-            this.lblTarget.Location = new System.Drawing.Point(204, 85);
-            this.lblTarget.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.lblTarget.Location = new System.Drawing.Point(136, 55);
             this.lblTarget.Name = "lblTarget";
-            this.lblTarget.Size = new System.Drawing.Size(134, 23);
+            this.lblTarget.Size = new System.Drawing.Size(89, 13);
             this.lblTarget.TabIndex = 4;
             this.lblTarget.Text = "Not selected yet";
             // 
@@ -378,11 +364,9 @@
             this.gbOptions.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.gbOptions.Controls.Add(this.panel3);
-            this.gbOptions.Location = new System.Drawing.Point(4, 535);
-            this.gbOptions.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.gbOptions.Location = new System.Drawing.Point(3, 348);
             this.gbOptions.Name = "gbOptions";
-            this.gbOptions.Padding = new System.Windows.Forms.Padding(4, 5, 4, 5);
-            this.gbOptions.Size = new System.Drawing.Size(1191, 352);
+            this.gbOptions.Size = new System.Drawing.Size(794, 229);
             this.gbOptions.TabIndex = 5;
             this.gbOptions.TabStop = false;
             this.gbOptions.Text = "Options";
@@ -406,19 +390,17 @@
             this.panel3.Controls.Add(this.chkOverwriteUnmanagedCustomizations);
             this.panel3.Controls.Add(this.chkActivate);
             this.panel3.Controls.Add(this.chkPublish);
-            this.panel3.Location = new System.Drawing.Point(9, 29);
-            this.panel3.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.panel3.Location = new System.Drawing.Point(6, 19);
             this.panel3.Name = "panel3";
-            this.panel3.Size = new System.Drawing.Size(1173, 314);
+            this.panel3.Size = new System.Drawing.Size(782, 204);
             this.panel3.TabIndex = 0;
             // 
             // chkIsvConfig
             // 
             this.chkIsvConfig.AutoSize = true;
-            this.chkIsvConfig.Location = new System.Drawing.Point(744, 282);
-            this.chkIsvConfig.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.chkIsvConfig.Location = new System.Drawing.Point(496, 183);
             this.chkIsvConfig.Name = "chkIsvConfig";
-            this.chkIsvConfig.Size = new System.Drawing.Size(112, 24);
+            this.chkIsvConfig.Size = new System.Drawing.Size(76, 17);
             this.chkIsvConfig.TabIndex = 106;
             this.chkIsvConfig.Text = "ISV Config";
             this.chkIsvConfig.UseVisualStyleBackColor = true;
@@ -426,10 +408,9 @@
             // chkRelationshipRoles
             // 
             this.chkRelationshipRoles.AutoSize = true;
-            this.chkRelationshipRoles.Location = new System.Drawing.Point(744, 248);
-            this.chkRelationshipRoles.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.chkRelationshipRoles.Location = new System.Drawing.Point(496, 161);
             this.chkRelationshipRoles.Name = "chkRelationshipRoles";
-            this.chkRelationshipRoles.Size = new System.Drawing.Size(168, 24);
+            this.chkRelationshipRoles.Size = new System.Drawing.Size(114, 17);
             this.chkRelationshipRoles.TabIndex = 105;
             this.chkRelationshipRoles.Text = "Relationship Roles";
             this.chkRelationshipRoles.UseVisualStyleBackColor = true;
@@ -437,10 +418,9 @@
             // chkOutlookSynchronization
             // 
             this.chkOutlookSynchronization.AutoSize = true;
-            this.chkOutlookSynchronization.Location = new System.Drawing.Point(744, 212);
-            this.chkOutlookSynchronization.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.chkOutlookSynchronization.Location = new System.Drawing.Point(496, 138);
             this.chkOutlookSynchronization.Name = "chkOutlookSynchronization";
-            this.chkOutlookSynchronization.Size = new System.Drawing.Size(207, 24);
+            this.chkOutlookSynchronization.Size = new System.Drawing.Size(141, 17);
             this.chkOutlookSynchronization.TabIndex = 104;
             this.chkOutlookSynchronization.Text = "Outlook Synchronization";
             this.chkOutlookSynchronization.UseVisualStyleBackColor = true;
@@ -448,10 +428,9 @@
             // chkGeneral
             // 
             this.chkGeneral.AutoSize = true;
-            this.chkGeneral.Location = new System.Drawing.Point(744, 141);
-            this.chkGeneral.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.chkGeneral.Location = new System.Drawing.Point(496, 92);
             this.chkGeneral.Name = "chkGeneral";
-            this.chkGeneral.Size = new System.Drawing.Size(92, 24);
+            this.chkGeneral.Size = new System.Drawing.Size(63, 17);
             this.chkGeneral.TabIndex = 103;
             this.chkGeneral.Text = "General";
             this.chkGeneral.UseVisualStyleBackColor = true;
@@ -459,10 +438,9 @@
             // chkMarketing
             // 
             this.chkMarketing.AutoSize = true;
-            this.chkMarketing.Location = new System.Drawing.Point(744, 178);
-            this.chkMarketing.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.chkMarketing.Location = new System.Drawing.Point(496, 116);
             this.chkMarketing.Name = "chkMarketing";
-            this.chkMarketing.Size = new System.Drawing.Size(105, 24);
+            this.chkMarketing.Size = new System.Drawing.Size(73, 17);
             this.chkMarketing.TabIndex = 102;
             this.chkMarketing.Text = "Marketing";
             this.chkMarketing.UseVisualStyleBackColor = true;
@@ -470,10 +448,9 @@
             // chkEmailTracking
             // 
             this.chkEmailTracking.AutoSize = true;
-            this.chkEmailTracking.Location = new System.Drawing.Point(744, 106);
-            this.chkEmailTracking.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.chkEmailTracking.Location = new System.Drawing.Point(496, 69);
             this.chkEmailTracking.Name = "chkEmailTracking";
-            this.chkEmailTracking.Size = new System.Drawing.Size(139, 24);
+            this.chkEmailTracking.Size = new System.Drawing.Size(95, 17);
             this.chkEmailTracking.TabIndex = 101;
             this.chkEmailTracking.Text = "E-mail tracking";
             this.chkEmailTracking.UseVisualStyleBackColor = true;
@@ -481,10 +458,9 @@
             // chkCustomization
             // 
             this.chkCustomization.AutoSize = true;
-            this.chkCustomization.Location = new System.Drawing.Point(744, 71);
-            this.chkCustomization.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.chkCustomization.Location = new System.Drawing.Point(496, 46);
             this.chkCustomization.Name = "chkCustomization";
-            this.chkCustomization.Size = new System.Drawing.Size(136, 24);
+            this.chkCustomization.Size = new System.Drawing.Size(91, 17);
             this.chkCustomization.TabIndex = 100;
             this.chkCustomization.Text = "Customization";
             this.chkCustomization.UseVisualStyleBackColor = true;
@@ -492,10 +468,9 @@
             // chkAutoNumering
             // 
             this.chkAutoNumering.AutoSize = true;
-            this.chkAutoNumering.Location = new System.Drawing.Point(744, 0);
-            this.chkAutoNumering.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.chkAutoNumering.Location = new System.Drawing.Point(496, 0);
             this.chkAutoNumering.Name = "chkAutoNumering";
-            this.chkAutoNumering.Size = new System.Drawing.Size(149, 24);
+            this.chkAutoNumering.Size = new System.Drawing.Size(100, 17);
             this.chkAutoNumering.TabIndex = 99;
             this.chkAutoNumering.Text = "Auto-numbering";
             this.chkAutoNumering.UseVisualStyleBackColor = true;
@@ -503,10 +478,9 @@
             // chkCalendar
             // 
             this.chkCalendar.AutoSize = true;
-            this.chkCalendar.Location = new System.Drawing.Point(744, 35);
-            this.chkCalendar.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.chkCalendar.Location = new System.Drawing.Point(496, 23);
             this.chkCalendar.Name = "chkCalendar";
-            this.chkCalendar.Size = new System.Drawing.Size(99, 24);
+            this.chkCalendar.Size = new System.Drawing.Size(68, 17);
             this.chkCalendar.TabIndex = 98;
             this.chkCalendar.Text = "Calendar";
             this.chkCalendar.UseVisualStyleBackColor = true;
@@ -517,9 +491,8 @@
             this.chkExportAsManaged.Checked = true;
             this.chkExportAsManaged.CheckState = System.Windows.Forms.CheckState.Checked;
             this.chkExportAsManaged.Location = new System.Drawing.Point(0, 0);
-            this.chkExportAsManaged.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.chkExportAsManaged.Name = "chkExportAsManaged";
-            this.chkExportAsManaged.Size = new System.Drawing.Size(296, 24);
+            this.chkExportAsManaged.Size = new System.Drawing.Size(199, 17);
             this.chkExportAsManaged.TabIndex = 97;
             this.chkExportAsManaged.Text = "Export selected solution as managed";
             this.chkExportAsManaged.UseVisualStyleBackColor = true;
@@ -528,10 +501,9 @@
             // chkConvertToManaged
             // 
             this.chkConvertToManaged.AutoSize = true;
-            this.chkConvertToManaged.Location = new System.Drawing.Point(363, 106);
-            this.chkConvertToManaged.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.chkConvertToManaged.Location = new System.Drawing.Point(242, 69);
             this.chkConvertToManaged.Name = "chkConvertToManaged";
-            this.chkConvertToManaged.Size = new System.Drawing.Size(245, 24);
+            this.chkConvertToManaged.Size = new System.Drawing.Size(168, 17);
             this.chkConvertToManaged.TabIndex = 96;
             this.chkConvertToManaged.Text = "Convert To Managed Solution";
             this.chkConvertToManaged.UseVisualStyleBackColor = true;
@@ -539,10 +511,9 @@
             // chkOverwriteUnmanagedCustomizations
             // 
             this.chkOverwriteUnmanagedCustomizations.AutoSize = true;
-            this.chkOverwriteUnmanagedCustomizations.Location = new System.Drawing.Point(363, 71);
-            this.chkOverwriteUnmanagedCustomizations.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.chkOverwriteUnmanagedCustomizations.Location = new System.Drawing.Point(242, 46);
             this.chkOverwriteUnmanagedCustomizations.Name = "chkOverwriteUnmanagedCustomizations";
-            this.chkOverwriteUnmanagedCustomizations.Size = new System.Drawing.Size(306, 24);
+            this.chkOverwriteUnmanagedCustomizations.Size = new System.Drawing.Size(205, 17);
             this.chkOverwriteUnmanagedCustomizations.TabIndex = 95;
             this.chkOverwriteUnmanagedCustomizations.Text = "Overwrite Unmanaged Customizations\r\n";
             this.chkOverwriteUnmanagedCustomizations.UseVisualStyleBackColor = true;
@@ -552,10 +523,9 @@
             this.chkActivate.AutoSize = true;
             this.chkActivate.Checked = true;
             this.chkActivate.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.chkActivate.Location = new System.Drawing.Point(363, 0);
-            this.chkActivate.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.chkActivate.Location = new System.Drawing.Point(242, 0);
             this.chkActivate.Name = "chkActivate";
-            this.chkActivate.Size = new System.Drawing.Size(293, 24);
+            this.chkActivate.Size = new System.Drawing.Size(200, 17);
             this.chkActivate.TabIndex = 94;
             this.chkActivate.Text = "Activate plugins steps and workflows";
             this.chkActivate.UseVisualStyleBackColor = true;
@@ -565,25 +535,23 @@
             this.chkPublish.AutoSize = true;
             this.chkPublish.Checked = true;
             this.chkPublish.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.chkPublish.Location = new System.Drawing.Point(363, 35);
-            this.chkPublish.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.chkPublish.Location = new System.Drawing.Point(242, 23);
             this.chkPublish.Name = "chkPublish";
-            this.chkPublish.Size = new System.Drawing.Size(310, 24);
+            this.chkPublish.Size = new System.Drawing.Size(209, 17);
             this.chkPublish.TabIndex = 93;
             this.chkPublish.Text = "Publish solution after having imported it";
             this.chkPublish.UseVisualStyleBackColor = true;
             // 
             // SolutionTransferTool
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.Controls.Add(this.gbOptions);
             this.Controls.Add(this.grpTargetSelection);
             this.Controls.Add(this.grpSourceSolution);
             this.Controls.Add(this.toolStrip1);
-            this.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.Name = "SolutionTransferTool";
-            this.Size = new System.Drawing.Size(1200, 892);
+            this.Size = new System.Drawing.Size(800, 580);
             this.toolStrip1.ResumeLayout(false);
             this.toolStrip1.PerformLayout();
             this.grpSourceSolution.ResumeLayout(false);
