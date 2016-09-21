@@ -243,7 +243,7 @@ namespace DamSim.SolutionTransferTool
                 item.Text = solution.GetAttributeValue<String>("uniquename");
                 item.SubItems.Add(solution.GetAttributeValue<String>("friendlyname"));
                 item.SubItems.Add(solution.GetAttributeValue<String>("version"));
-                item.SubItems.Add(solution.GetAttributeValue<DateTime>("installedon").ToShortDateString());
+                item.SubItems.Add(solution.GetAttributeValue<DateTime>("installedon").ToString("yy-MM-dd HH:mm"));
                 item.SubItems.Add(solution.GetAttributeValue<EntityReference>("publisherid").Name);
                 item.SubItems.Add(solution.GetAttributeValue<String>("description"));
                 lstSourceSolutions.Items.Add(item);
@@ -286,7 +286,7 @@ namespace DamSim.SolutionTransferTool
             foreach (var request in requests)
             {
                 var exportRequest = request as ExportSolutionRequest;
-                if(exportRequest != null)
+                if (exportRequest != null)
                 {
                     solutionName = exportRequest.SolutionName;
 
@@ -298,7 +298,7 @@ namespace DamSim.SolutionTransferTool
                 }
 
                 var importRequest = request as ImportSolutionRequest;
-                if(importRequest != null)
+                if (importRequest != null)
                 {
                     lastImportId = importRequest.ImportJobId;
 
@@ -310,13 +310,12 @@ namespace DamSim.SolutionTransferTool
                 }
 
                 var publishRequest = request as PublishAllXmlRequest;
-                if(publishRequest != null)
+                if (publishRequest != null)
                 {
                     bw.ReportProgress(0, "Publishing...");
                     targetService.Execute(publishRequest);
                     continue;
                 }
-
             }
         }
 
@@ -408,7 +407,7 @@ namespace DamSim.SolutionTransferTool
                 var item = lstSourceSolutions.SelectedItems[0];
 
                 var solutionsToTransfer = new List<string>();
-                if(lstSourceSolutions.SelectedItems.Count > 1)
+                if (lstSourceSolutions.SelectedItems.Count > 1)
                 {
                     // Open dialog to order solutions import
                     foreach (ListViewItem sourceItem in lstSourceSolutions.SelectedItems)
@@ -417,7 +416,7 @@ namespace DamSim.SolutionTransferTool
                     }
 
                     var dialog = new SolutionOrderDialog(solutionsToTransfer);
-                    if(dialog.ShowDialog(ParentForm) == DialogResult.OK)
+                    if (dialog.ShowDialog(ParentForm) == DialogResult.OK)
                     {
                         solutionsToTransfer = dialog.Solutions;
                     }
@@ -431,11 +430,10 @@ namespace DamSim.SolutionTransferTool
                     solutionsToTransfer.Add(item.Text);
                 }
 
-
                 infoPanel = InformationPanel.GetInformationPanel(this, "Initializing...", 340, 120);
 
                 var requests = new List<OrganizationRequest>();
-                
+
                 foreach (var solution in solutionsToTransfer)
                 {
                     var importId = Guid.NewGuid();
