@@ -8,6 +8,7 @@ using System.ComponentModel;
 using System.Drawing;
 using System.IO;
 using System.Windows.Forms;
+using System.Xml;
 using XrmToolBox.Extensibility;
 using XrmToolBox.Extensibility.Interfaces;
 using InformationPanel = XrmToolBox.Extensibility.InformationPanel;
@@ -202,13 +203,41 @@ namespace DamSim.SolutionTransferTool
         /// <param name="path"></param>
         private void DownloadLogFile(string path)
         {
-            var importLogRequest = new RetrieveFormattedImportJobResultsRequest
+            //var importLogRequest = new RetrieveFormattedImportJobResultsRequest
+            //{
+            //    ImportJobId = lastImportId
+            //};
+            //var importLogResponse = (RetrieveFormattedImportJobResultsResponse)targetService.Execute(importLogRequest);
+
+            var importQuery = new QueryByAttribute("importjob")
             {
-                ImportJobId = lastImportId
+                ColumnSet = new ColumnSet(true),
+                Attributes = { "importjobid" },
+                Values = { lastImportId },
+                Orders = { new OrderExpression("createdon", OrderType.Descending) }
             };
-            var importLogResponse = (RetrieveFormattedImportJobResultsResponse)targetService.Execute(importLogRequest);
+
+            var data = targetService.RetrieveMultiple(importQuery).Entities[0].GetAttributeValue<string>("data");
+
+            var dataxml = new XmlDocument();
+            dataxml.LoadXml(data);
+
+            var innerDataXml = new XmlDocument();
+            innerDataXml.LoadXml(dataxml["importexportxml"]["solutionManifests"]["solutionManifest"]["result"]["parameters"].ChildNodes[1].ChildNodes[0].Value);
+
+            Func<string> Stringify = () =>
+            {
+                using (var stringWriter = new StringWriter())
+                using (var xmlTextWriter = XmlWriter.Create(stringWriter))
+                {
+                    innerDataXml.WriteTo(xmlTextWriter);
+                    xmlTextWriter.Flush();
+                    return stringWriter.GetStringBuilder().ToString();
+                }
+            };
+
             var filePath = string.Format(@"{0}\{1}.xml", path, DateTime.Now.ToString("yyyy_MM_dd__HH_mm"));
-            File.WriteAllText(filePath, importLogResponse.FormattedResults);
+            File.WriteAllText(filePath, Stringify());
         }
 
         /// <summary>
