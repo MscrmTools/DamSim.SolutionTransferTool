@@ -24,6 +24,7 @@ namespace DamSim.SolutionTransferTool
         private ConnectionDetail detail;
         private Guid lastImportId;
         private Panel infoPanel;
+        private string SolutionUrlBase;
         private IOrganizationService service;
         private Dictionary<string, IOrganizationService> targetServices = new Dictionary<string, IOrganizationService>();
         private KeyValuePair<string, IOrganizationService> lastTargetService;
@@ -35,6 +36,7 @@ namespace DamSim.SolutionTransferTool
         public SolutionTransferTool()
         {
             InitializeComponent();
+
         }
 
         #endregion Constructor
@@ -85,11 +87,13 @@ namespace DamSim.SolutionTransferTool
             if (actionName == "TargetOrganization")
             {
                 targetServices.Add(detail.ConnectionName, newService);
+                lastTargetService = new KeyValuePair<string, IOrganizationService>(detail.ConnectionName, newService);
                 lstTargetEnvironments.Items.Add(new ListViewItem{ Text = detail.ConnectionName });
             }
             else
             {
                 service = newService;
+                SolutionUrlBase = detail.WebApplicationUrl;
                 SetConnectionLabel(detail, "Source");
                 RetrieveSolutions();
             }
@@ -157,11 +161,7 @@ namespace DamSim.SolutionTransferTool
                 Properties.Settings.Default.LastFolderUsed = dialog.SelectedPath;
                 Properties.Settings.Default.Save();
 
-                Cursor = Cursors.WaitCursor;
-                btnAddTarget.Enabled = false;
-                tsbTransfertSolution.Enabled = false;
-                tsbLoadSolutions.Enabled = false;
-                tsbDownloadLogFile.Enabled = false;
+                ToggleWaitMode(true);
 
                 var worker = new BackgroundWorker();
                 worker.DoWork += (o, args) => DownloadLogFile(dialog.SelectedPath);
@@ -176,11 +176,7 @@ namespace DamSim.SolutionTransferTool
                     {
                         MessageBox.Show("Download completed!", "File Download", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
-                    btnAddTarget.Enabled = true;
-                    tsbTransfertSolution.Enabled = true;
-                    tsbLoadSolutions.Enabled = true;
-                    tsbDownloadLogFile.Enabled = true;
-                    Cursor = Cursors.Default;
+                    ToggleWaitMode(false);
                 };
                 worker.RunWorkerAsync();
             }
@@ -195,11 +191,12 @@ namespace DamSim.SolutionTransferTool
             }
         }
 
-        
+
 
 
         #endregion UI Events
 
+    
         #region Methods
 
 
@@ -214,33 +211,6 @@ namespace DamSim.SolutionTransferTool
                 ImportJobId = lastImportId
             };
             var importLogResponse = (RetrieveFormattedImportJobResultsResponse)lastTargetService.Value.Execute(importLogRequest);
-
-            //var importQuery = new QueryByAttribute("importjob")
-            //{
-            //    ColumnSet = new ColumnSet(true),
-            //    Attributes = { "importjobid" },
-            //    Values = { lastImportId },
-            //    Orders = { new OrderExpression("createdon", OrderType.Descending) }
-            //};
-
-            //var data = lastTargetService.Value.RetrieveMultiple(importQuery).Entities[0].GetAttributeValue<string>("data");
-
-            //var dataxml = new XmlDocument();
-            //dataxml.LoadXml(data);
-
-            //var innerDataXml = new XmlDocument();
-            //innerDataXml.LoadXml(dataxml["importexportxml"]["solutionManifests"]["solutionManifest"]["result"]["parameters"].ChildNodes[1].ChildNodes[0].Value);
-
-            //Func<string> Stringify = () =>
-            //{
-            //    using (var stringWriter = new StringWriter())
-            //    using (var xmlTextWriter = XmlWriter.Create(stringWriter))
-            //    {
-            //        innerDataXml.WriteTo(xmlTextWriter);
-            //        xmlTextWriter.Flush();
-            //        return stringWriter.GetStringBuilder().ToString();
-            //    }
-            //};
 
             var filePath = string.Format(@"{0}\{1}.xml", path, DateTime.Now.ToString("yyyy_MM_dd__HH_mm"));
             File.WriteAllText(filePath, importLogResponse.FormattedResults);
@@ -320,10 +290,8 @@ namespace DamSim.SolutionTransferTool
             var solutionName = string.Empty;
             byte[] solutionFileContent = null;
 
-            foreach (var targetService in targetServices)
-            {
-
-                lastTargetService = targetService;
+          
+               
                 foreach (var request in requests)
                 {
                     var exportRequest = request as ExportSolutionRequest;
@@ -331,13 +299,16 @@ namespace DamSim.SolutionTransferTool
                     {
                         solutionName = exportRequest.SolutionName;
 
-                        bw.ReportProgress(0, string.Format("Exporting solution {0} to {1}...", solutionName,targetService.Key));
+                        bw.ReportProgress(0, string.Format("Exporting solution {0} ...", solutionName));
                         var exportResponse = (ExportSolutionResponse)service.Execute(exportRequest);
                         solutionFileContent = exportResponse.ExportSolutionFile;
 
-                        continue;
+                       // continue;
                     }
 
+                foreach (var targetService in targetServices)
+                {
+                    lastTargetService = targetService;
                     var importRequest = request as ImportSolutionRequest;
                     if (importRequest != null)
                     {
@@ -347,7 +318,7 @@ namespace DamSim.SolutionTransferTool
                         importRequest.CustomizationFile = solutionFileContent;
                         targetService.Value.Execute(importRequest);
 
-                        continue;
+                     //   continue;
                     }
 
                     var publishRequest = request as PublishAllXmlRequest;
@@ -355,7 +326,7 @@ namespace DamSim.SolutionTransferTool
                     {
                         bw.ReportProgress(0, string.Format("Publishing {0} to {1}...",solutionName,targetService.Key));
                         targetService.Value.Execute(publishRequest);
-                        continue;
+                    //    continue;
                     }
                 }
             }
@@ -558,6 +529,44 @@ namespace DamSim.SolutionTransferTool
             }
 
 
+        }
+
+        private void tsbFindMissingDependencies_Click(object sender, EventArgs e)
+        {
+            var child = new MissingComponentsForm();           
+            child.ShowMissingComponents(lastTargetService.Value,service,lastImportId);
+            
+        }
+
+        private void ToggleWaitMode(bool on)
+        {
+            if (on)
+            {
+                Cursor = Cursors.WaitCursor;
+                btnAddTarget.Enabled = false;
+                tsbTransfertSolution.Enabled = false;
+                tsbLoadSolutions.Enabled = false;
+                tsbDownloadLogFile.Enabled = false;
+                tsbFindMissingDependencies.Enabled = false;
+            }
+            else
+            {
+                btnAddTarget.Enabled = true;
+                tsbTransfertSolution.Enabled = true;
+                tsbLoadSolutions.Enabled = true;
+                tsbDownloadLogFile.Enabled = true;
+                tsbFindMissingDependencies.Enabled = true;
+
+                Cursor = Cursors.Default;
+            }
+        }
+
+        private void lstSourceSolutions_KeyDown(Object sender, KeyEventArgs e)
+        {
+            if(e.KeyCode == Keys.Enter && lstSourceSolutions.SelectedItems.Count>0)
+            {
+                System.Diagnostics.Process.Start(SolutionUrlBase+ $"/tools/solution/edit.aspx?id={lstSourceSolutions.SelectedItems[0].Tag.ToString()}");
+            }
         }
     }
 }

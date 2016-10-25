@@ -40,6 +40,7 @@ namespace DamSim.SolutionTransferTool
             this.tsbTransfertSolution = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator3 = new System.Windows.Forms.ToolStripSeparator();
             this.tsbDownloadLogFile = new System.Windows.Forms.ToolStripButton();
+            this.tsbFindMissingDependencies = new System.Windows.Forms.ToolStripButton();
             this.grpSourceSolution = new System.Windows.Forms.GroupBox();
             this.panel1 = new System.Windows.Forms.Panel();
             this.label2 = new System.Windows.Forms.Label();
@@ -96,7 +97,8 @@ namespace DamSim.SolutionTransferTool
             this.toolStripSeparator2,
             this.tsbTransfertSolution,
             this.toolStripSeparator3,
-            this.tsbDownloadLogFile});
+            this.tsbDownloadLogFile,
+            this.tsbFindMissingDependencies});
             this.toolStrip1.Location = new System.Drawing.Point(0, 0);
             this.toolStrip1.Name = "toolStrip1";
             this.toolStrip1.Size = new System.Drawing.Size(800, 25);
@@ -159,6 +161,15 @@ namespace DamSim.SolutionTransferTool
             this.tsbDownloadLogFile.ToolTipText = "This button allows you to donwload the log file from the last solution imported w" +
     "ith errors";
             this.tsbDownloadLogFile.Click += new System.EventHandler(this.BtnDownloadLogClick);
+            // 
+            // tsbFindMissingDependencies
+            // 
+            this.tsbFindMissingDependencies.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsbFindMissingDependencies.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.tsbFindMissingDependencies.Name = "tsbFindMissingDependencies";
+            this.tsbFindMissingDependencies.Size = new System.Drawing.Size(155, 22);
+            this.tsbFindMissingDependencies.Text = "Find Missing Dependencies";
+            this.tsbFindMissingDependencies.Click += new System.EventHandler(this.tsbFindMissingDependencies_Click);
             // 
             // grpSourceSolution
             // 
@@ -252,6 +263,7 @@ namespace DamSim.SolutionTransferTool
             this.lstSourceSolutions.UseCompatibleStateImageBehavior = false;
             this.lstSourceSolutions.View = System.Windows.Forms.View.Details;
             this.lstSourceSolutions.ColumnClick += new System.Windows.Forms.ColumnClickEventHandler(this.lstSourceSolutions_ColumnClick);
+            this.lstSourceSolutions.KeyDown += new System.Windows.Forms.KeyEventHandler(this.lstSourceSolutions_KeyDown);
             // 
             // uniquename
             // 
@@ -487,8 +499,6 @@ namespace DamSim.SolutionTransferTool
             // chkExportAsManaged
             // 
             this.chkExportAsManaged.AutoSize = true;
-            this.chkExportAsManaged.Checked = true;
-            this.chkExportAsManaged.CheckState = System.Windows.Forms.CheckState.Checked;
             this.chkExportAsManaged.Location = new System.Drawing.Point(0, 0);
             this.chkExportAsManaged.Name = "chkExportAsManaged";
             this.chkExportAsManaged.Size = new System.Drawing.Size(199, 17);
@@ -617,5 +627,6 @@ namespace DamSim.SolutionTransferTool
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator3;
         private System.Windows.Forms.ToolStripButton tsbDownloadLogFile;
         private ListView lstTargetEnvironments;
+        private ToolStripButton tsbFindMissingDependencies;
     }
 }
