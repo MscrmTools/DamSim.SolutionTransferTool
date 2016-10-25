@@ -534,7 +534,7 @@ namespace DamSim.SolutionTransferTool
         private void tsbFindMissingDependencies_Click(object sender, EventArgs e)
         {
             var child = new MissingComponentsForm();           
-            child.ShowMissingComponents(lastTargetService.Value,service,lastImportId);
+            child.ShowMissingComponents(lastTargetService,service,lastImportId);
             
         }
 

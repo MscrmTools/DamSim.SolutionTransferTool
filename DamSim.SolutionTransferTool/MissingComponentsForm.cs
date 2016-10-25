@@ -27,7 +27,7 @@ namespace DamSim.SolutionTransferTool
             InitializeComponent();
         }
 
-        public void ShowMissingComponents(IOrganizationService TargetService,IOrganizationService SourceService,Guid? jobId)
+        public void ShowMissingComponents(KeyValuePair<string,IOrganizationService> TargetService,IOrganizationService SourceService,Guid? jobId)
         {
             _sourceService = SourceService;
 
@@ -54,7 +54,7 @@ namespace DamSim.SolutionTransferTool
             };
 
 
-            var JobLog = jobId==null? TargetService.RetrieveMultiple(lastFailedImportQuery).Entities[0] : TargetService.RetrieveMultiple(importQuery).Entities[0];
+            var JobLog = jobId==null? TargetService.Value.RetrieveMultiple(lastFailedImportQuery).Entities[0] : TargetService.Value.RetrieveMultiple(importQuery).Entities[0];
 
             SolutionName = JobLog.GetAttributeValue<string>("solutionname");
 
@@ -90,6 +90,13 @@ namespace DamSim.SolutionTransferTool
                 var typeLabel = options.First(x => x.Key == type).Value;
                 var id = node.Attributes["id"]?.Value;
 
+                var solutionValue = node.Attributes["solution"]?.Value;
+                if (solutionValue != null && solutionValue != "Active")
+                {
+                    MessageBox.Show($"Environment \"{TargetService.Key}\" needs solution \"{solutionValue}\" to be installed", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
                 var componentId = Guid.Empty;
                 switch (type)
                 {
@@ -113,6 +120,7 @@ namespace DamSim.SolutionTransferTool
                             break;
                         }
                     case 60:
+                    case 61:
                         {
                             componentId = new Guid(id);
                             break;
@@ -138,7 +146,7 @@ namespace DamSim.SolutionTransferTool
                             componentId = (Guid)((RetrieveEntityResponse)_sourceService.Execute(entityMetadata)).EntityMetadata.MetadataId;
                             break;
                         }
-
+            
                 }
 
                 var item = new ListViewItem
