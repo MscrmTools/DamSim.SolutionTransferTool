@@ -165,10 +165,13 @@ namespace DamSim.SolutionTransferTool
             // tsbFindMissingDependencies
             // 
             this.tsbFindMissingDependencies.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsbFindMissingDependencies.Enabled = false;
             this.tsbFindMissingDependencies.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbFindMissingDependencies.Name = "tsbFindMissingDependencies";
             this.tsbFindMissingDependencies.Size = new System.Drawing.Size(155, 22);
             this.tsbFindMissingDependencies.Text = "Find Missing Dependencies";
+            this.tsbFindMissingDependencies.ToolTipText = "Use this button to detect what component were missing for the previous failed sol" +
+    "ution import";
             this.tsbFindMissingDependencies.Click += new System.EventHandler(this.tsbFindMissingDependencies_Click);
             // 
             // grpSourceSolution
