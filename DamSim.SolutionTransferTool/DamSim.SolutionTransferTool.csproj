@@ -120,6 +120,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ListViewItemComparer.cs" />
+    <Compile Include="MissingComponentsForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="MissingComponentsForm.Designer.cs">
+      <DependentUpon>MissingComponentsForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="Plugin.cs" />
     <Compile Include="Properties\Settings.Designer.cs">
       <AutoGen>True</AutoGen>
@@ -146,6 +152,9 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="MissingComponentsForm.resx">
+      <DependentUpon>MissingComponentsForm.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="SolutionOrderDialog.resx">
       <DependentUpon>SolutionOrderDialog.cs</DependentUpon>
     </EmbeddedResource>

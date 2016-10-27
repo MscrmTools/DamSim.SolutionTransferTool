@@ -40,6 +40,7 @@ namespace DamSim.SolutionTransferTool
             this.tsbTransfertSolution = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator3 = new System.Windows.Forms.ToolStripSeparator();
             this.tsbDownloadLogFile = new System.Windows.Forms.ToolStripButton();
+            this.tsbFindMissingDependencies = new System.Windows.Forms.ToolStripButton();
             this.grpSourceSolution = new System.Windows.Forms.GroupBox();
             this.panel1 = new System.Windows.Forms.Panel();
             this.label2 = new System.Windows.Forms.Label();
@@ -53,12 +54,12 @@ namespace DamSim.SolutionTransferTool
             this.installedon = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.publisher = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.description = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.btnSelectTarget = new System.Windows.Forms.Button();
+            this.btnAddTarget = new System.Windows.Forms.Button();
             this.grpTargetSelection = new System.Windows.Forms.GroupBox();
+            this.lstTargetEnvironments = new System.Windows.Forms.ListView();
             this.panel2 = new System.Windows.Forms.Panel();
             this.label3 = new System.Windows.Forms.Label();
             this.pictureBox2 = new System.Windows.Forms.PictureBox();
-            this.lblTarget = new System.Windows.Forms.Label();
             this.imageList1 = new System.Windows.Forms.ImageList(this.components);
             this.gbOptions = new System.Windows.Forms.GroupBox();
             this.panel3 = new System.Windows.Forms.Panel();
@@ -96,7 +97,8 @@ namespace DamSim.SolutionTransferTool
             this.toolStripSeparator2,
             this.tsbTransfertSolution,
             this.toolStripSeparator3,
-            this.tsbDownloadLogFile});
+            this.tsbDownloadLogFile,
+            this.tsbFindMissingDependencies});
             this.toolStrip1.Location = new System.Drawing.Point(0, 0);
             this.toolStrip1.Name = "toolStrip1";
             this.toolStrip1.Size = new System.Drawing.Size(800, 25);
@@ -124,7 +126,7 @@ namespace DamSim.SolutionTransferTool
             this.tsbLoadSolutions.Image = ((System.Drawing.Image)(resources.GetObject("tsbLoadSolutions.Image")));
             this.tsbLoadSolutions.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbLoadSolutions.Name = "tsbLoadSolutions";
-            this.tsbLoadSolutions.Size = new System.Drawing.Size(114, 22);
+            this.tsbLoadSolutions.Size = new System.Drawing.Size(105, 22);
             this.tsbLoadSolutions.Text = "Load Solutions";
             this.tsbLoadSolutions.Click += new System.EventHandler(this.TsbLoadSolutionsClick);
             // 
@@ -138,7 +140,7 @@ namespace DamSim.SolutionTransferTool
             this.tsbTransfertSolution.Image = ((System.Drawing.Image)(resources.GetObject("tsbTransfertSolution.Image")));
             this.tsbTransfertSolution.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbTransfertSolution.Name = "tsbTransfertSolution";
-            this.tsbTransfertSolution.Size = new System.Drawing.Size(125, 22);
+            this.tsbTransfertSolution.Size = new System.Drawing.Size(115, 22);
             this.tsbTransfertSolution.Text = "Transfer solution";
             this.tsbTransfertSolution.Click += new System.EventHandler(this.TsbTransfertSolutionClick);
             // 
@@ -154,11 +156,20 @@ namespace DamSim.SolutionTransferTool
             this.tsbDownloadLogFile.Image = ((System.Drawing.Image)(resources.GetObject("tsbDownloadLogFile.Image")));
             this.tsbDownloadLogFile.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbDownloadLogFile.Name = "tsbDownloadLogFile";
-            this.tsbDownloadLogFile.Size = new System.Drawing.Size(120, 22);
+            this.tsbDownloadLogFile.Size = new System.Drawing.Size(109, 22);
             this.tsbDownloadLogFile.Text = "Download Log File";
             this.tsbDownloadLogFile.ToolTipText = "This button allows you to donwload the log file from the last solution imported w" +
     "ith errors";
             this.tsbDownloadLogFile.Click += new System.EventHandler(this.BtnDownloadLogClick);
+            // 
+            // tsbFindMissingDependencies
+            // 
+            this.tsbFindMissingDependencies.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsbFindMissingDependencies.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.tsbFindMissingDependencies.Name = "tsbFindMissingDependencies";
+            this.tsbFindMissingDependencies.Size = new System.Drawing.Size(155, 22);
+            this.tsbFindMissingDependencies.Text = "Find Missing Dependencies";
+            this.tsbFindMissingDependencies.Click += new System.EventHandler(this.tsbFindMissingDependencies_Click);
             // 
             // grpSourceSolution
             // 
@@ -172,7 +183,7 @@ namespace DamSim.SolutionTransferTool
             this.grpSourceSolution.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.grpSourceSolution.Location = new System.Drawing.Point(3, 27);
             this.grpSourceSolution.Name = "grpSourceSolution";
-            this.grpSourceSolution.Size = new System.Drawing.Size(794, 226);
+            this.grpSourceSolution.Size = new System.Drawing.Size(794, 325);
             this.grpSourceSolution.TabIndex = 1;
             this.grpSourceSolution.TabStop = false;
             this.grpSourceSolution.Text = "Solutions";
@@ -247,11 +258,12 @@ namespace DamSim.SolutionTransferTool
             this.lstSourceSolutions.HideSelection = false;
             this.lstSourceSolutions.Location = new System.Drawing.Point(6, 65);
             this.lstSourceSolutions.Name = "lstSourceSolutions";
-            this.lstSourceSolutions.Size = new System.Drawing.Size(779, 152);
+            this.lstSourceSolutions.Size = new System.Drawing.Size(779, 251);
             this.lstSourceSolutions.TabIndex = 2;
             this.lstSourceSolutions.UseCompatibleStateImageBehavior = false;
             this.lstSourceSolutions.View = System.Windows.Forms.View.Details;
             this.lstSourceSolutions.ColumnClick += new System.Windows.Forms.ColumnClickEventHandler(this.lstSourceSolutions_ColumnClick);
+            this.lstSourceSolutions.KeyDown += new System.Windows.Forms.KeyEventHandler(this.lstSourceSolutions_KeyDown);
             // 
             // uniquename
             // 
@@ -283,31 +295,41 @@ namespace DamSim.SolutionTransferTool
             this.description.Text = "Description";
             this.description.Width = 200;
             // 
-            // btnSelectTarget
+            // btnAddTarget
             // 
-            this.btnSelectTarget.Font = new System.Drawing.Font("Segoe UI", 8.25F);
-            this.btnSelectTarget.Location = new System.Drawing.Point(6, 49);
-            this.btnSelectTarget.Name = "btnSelectTarget";
-            this.btnSelectTarget.Size = new System.Drawing.Size(111, 25);
-            this.btnSelectTarget.TabIndex = 3;
-            this.btnSelectTarget.Text = "Select target";
-            this.btnSelectTarget.UseVisualStyleBackColor = true;
-            this.btnSelectTarget.Click += new System.EventHandler(this.BtnSelectTargetClick);
+            this.btnAddTarget.Font = new System.Drawing.Font("Segoe UI", 8.25F);
+            this.btnAddTarget.Location = new System.Drawing.Point(6, 49);
+            this.btnAddTarget.Name = "btnAddTarget";
+            this.btnAddTarget.Size = new System.Drawing.Size(111, 25);
+            this.btnAddTarget.TabIndex = 3;
+            this.btnAddTarget.Text = "Add target";
+            this.btnAddTarget.UseVisualStyleBackColor = true;
+            this.btnAddTarget.Click += new System.EventHandler(this.BtnSelectTargetClick);
             // 
             // grpTargetSelection
             // 
             this.grpTargetSelection.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.grpTargetSelection.Controls.Add(this.lstTargetEnvironments);
             this.grpTargetSelection.Controls.Add(this.panel2);
-            this.grpTargetSelection.Controls.Add(this.lblTarget);
-            this.grpTargetSelection.Controls.Add(this.btnSelectTarget);
+            this.grpTargetSelection.Controls.Add(this.btnAddTarget);
             this.grpTargetSelection.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.grpTargetSelection.Location = new System.Drawing.Point(3, 260);
+            this.grpTargetSelection.Location = new System.Drawing.Point(3, 359);
             this.grpTargetSelection.Name = "grpTargetSelection";
             this.grpTargetSelection.Size = new System.Drawing.Size(794, 82);
             this.grpTargetSelection.TabIndex = 4;
             this.grpTargetSelection.TabStop = false;
             this.grpTargetSelection.Text = "Target environment";
+            // 
+            // lstTargetEnvironments
+            // 
+            this.lstTargetEnvironments.Location = new System.Drawing.Point(123, 49);
+            this.lstTargetEnvironments.Name = "lstTargetEnvironments";
+            this.lstTargetEnvironments.Size = new System.Drawing.Size(662, 25);
+            this.lstTargetEnvironments.TabIndex = 7;
+            this.lstTargetEnvironments.UseCompatibleStateImageBehavior = false;
+            this.lstTargetEnvironments.View = System.Windows.Forms.View.List;
+            this.lstTargetEnvironments.KeyDown += new System.Windows.Forms.KeyEventHandler(this.lstTargetEnvironments_KeyDown);
             // 
             // panel2
             // 
@@ -328,10 +350,10 @@ namespace DamSim.SolutionTransferTool
             this.label3.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.label3.Location = new System.Drawing.Point(26, 4);
             this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(464, 15);
+            this.label3.Size = new System.Drawing.Size(455, 15);
             this.label3.TabIndex = 6;
-            this.label3.Text = "Click on \"Select target\" to select the organization where to import the selected " +
-    "solution";
+            this.label3.Text = "Click on \"Add target\" to select the organization where to import the selected sol" +
+    "ution";
             // 
             // pictureBox2
             // 
@@ -341,17 +363,6 @@ namespace DamSim.SolutionTransferTool
             this.pictureBox2.Size = new System.Drawing.Size(16, 16);
             this.pictureBox2.TabIndex = 5;
             this.pictureBox2.TabStop = false;
-            // 
-            // lblTarget
-            // 
-            this.lblTarget.AutoSize = true;
-            this.lblTarget.Font = new System.Drawing.Font("Segoe UI", 8.25F);
-            this.lblTarget.ForeColor = System.Drawing.Color.Red;
-            this.lblTarget.Location = new System.Drawing.Point(136, 55);
-            this.lblTarget.Name = "lblTarget";
-            this.lblTarget.Size = new System.Drawing.Size(89, 13);
-            this.lblTarget.TabIndex = 4;
-            this.lblTarget.Text = "Not selected yet";
             // 
             // imageList1
             // 
@@ -364,7 +375,7 @@ namespace DamSim.SolutionTransferTool
             this.gbOptions.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.gbOptions.Controls.Add(this.panel3);
-            this.gbOptions.Location = new System.Drawing.Point(3, 348);
+            this.gbOptions.Location = new System.Drawing.Point(3, 447);
             this.gbOptions.Name = "gbOptions";
             this.gbOptions.Size = new System.Drawing.Size(794, 229);
             this.gbOptions.TabIndex = 5;
@@ -488,8 +499,6 @@ namespace DamSim.SolutionTransferTool
             // chkExportAsManaged
             // 
             this.chkExportAsManaged.AutoSize = true;
-            this.chkExportAsManaged.Checked = true;
-            this.chkExportAsManaged.CheckState = System.Windows.Forms.CheckState.Checked;
             this.chkExportAsManaged.Location = new System.Drawing.Point(0, 0);
             this.chkExportAsManaged.Name = "chkExportAsManaged";
             this.chkExportAsManaged.Size = new System.Drawing.Size(199, 17);
@@ -551,7 +560,7 @@ namespace DamSim.SolutionTransferTool
             this.Controls.Add(this.grpSourceSolution);
             this.Controls.Add(this.toolStrip1);
             this.Name = "SolutionTransferTool";
-            this.Size = new System.Drawing.Size(800, 580);
+            this.Size = new System.Drawing.Size(800, 679);
             this.toolStrip1.ResumeLayout(false);
             this.toolStrip1.PerformLayout();
             this.grpSourceSolution.ResumeLayout(false);
@@ -560,7 +569,6 @@ namespace DamSim.SolutionTransferTool
             this.panel1.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
             this.grpTargetSelection.ResumeLayout(false);
-            this.grpTargetSelection.PerformLayout();
             this.panel2.ResumeLayout(false);
             this.panel2.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox2)).EndInit();
@@ -572,6 +580,7 @@ namespace DamSim.SolutionTransferTool
 
         }
 
+ 
         #endregion
 
         private System.Windows.Forms.ToolStrip toolStrip1;
@@ -582,10 +591,9 @@ namespace DamSim.SolutionTransferTool
         private System.Windows.Forms.ColumnHeader version;
         private System.Windows.Forms.ColumnHeader installedon;
         private System.Windows.Forms.ColumnHeader publisher;
-        private System.Windows.Forms.Button btnSelectTarget;
+        private System.Windows.Forms.Button btnAddTarget;
         private System.Windows.Forms.GroupBox grpTargetSelection;
         private System.Windows.Forms.Label lblSource;
-        private System.Windows.Forms.Label lblTarget;
         private System.Windows.Forms.ImageList imageList1;
         private System.Windows.Forms.ColumnHeader friendlyname;
         private System.Windows.Forms.ColumnHeader description;
@@ -618,5 +626,7 @@ namespace DamSim.SolutionTransferTool
         private System.Windows.Forms.CheckBox chkPublish;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator3;
         private System.Windows.Forms.ToolStripButton tsbDownloadLogFile;
+        private ListView lstTargetEnvironments;
+        private ToolStripButton tsbFindMissingDependencies;
     }
 }
