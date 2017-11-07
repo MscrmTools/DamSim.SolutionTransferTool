@@ -5,6 +5,7 @@ using Microsoft.Xrm.Sdk.Query;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Windows.Forms;
@@ -126,6 +127,7 @@ namespace DamSim.SolutionTransferTool
                 message = string.Format("An error occured: {0}", e.Error.Message);
                 MessageBox.Show(message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 tsbDownloadLogFile.Enabled = true;
+                tsbFindMissingDependencies.Enabled = true;
             }
             else
             {
@@ -164,7 +166,7 @@ namespace DamSim.SolutionTransferTool
                 ToggleWaitMode(true);
 
                 var worker = new BackgroundWorker();
-                worker.DoWork += (o, args) => DownloadLogFile(dialog.SelectedPath);
+                worker.DoWork += (o, args) => args.Result = DownloadLogFile(dialog.SelectedPath);
                 worker.RunWorkerCompleted += (o, args) =>
                 {
                     if (args.Error != null)
@@ -174,7 +176,14 @@ namespace DamSim.SolutionTransferTool
                     }
                     else
                     {
-                        MessageBox.Show("Download completed!", "File Download", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        if (
+                            MessageBox.Show(
+                                string.Format("Download completed!\r\n\r\nWould you like to open the file now ({0})?\r\n\r\n(Microsoft Excel is required)", args.Result),
+                                "File Download", MessageBoxButtons.YesNo, MessageBoxIcon.Information) ==
+                            DialogResult.Yes)
+                        {
+                            Process.Start("Excel.exe", args.Result.ToString());
+                        }
                     }
                     ToggleWaitMode(false);
                 };
@@ -204,7 +213,7 @@ namespace DamSim.SolutionTransferTool
         /// Downloads the Log file
         /// </summary>
         /// <param name="path"></param>
-        private void DownloadLogFile(string path)
+        private string DownloadLogFile(string path)
         {
             var importLogRequest = new RetrieveFormattedImportJobResultsRequest
             {
@@ -214,6 +223,8 @@ namespace DamSim.SolutionTransferTool
 
             var filePath = string.Format(@"{0}\{1}.xml", path, DateTime.Now.ToString("yyyy_MM_dd__HH_mm"));
             File.WriteAllText(filePath, importLogResponse.FormattedResults);
+
+            return filePath;
         }
 
         /// <summary>
@@ -407,16 +418,6 @@ namespace DamSim.SolutionTransferTool
         {
             if (lstSourceSolutions.SelectedItems.Count > 0 && targetServices.Any())
             {
-                if (detail != null && detail.OrganizationMajorVersion == 8)
-                {
-                    if (DialogResult.No == MessageBox.Show(ParentForm,
-                            "This plugin has not been tested with CRM 2016 yet, especially regarding new solution framework\r\n\r\nAre you sure you want to continue?",
-                            "Warning", MessageBoxButtons.YesNo, MessageBoxIcon.Warning))
-                    {
-                        return;
-                    }
-                }
-
                 var item = lstSourceSolutions.SelectedItems[0];
 
                 var solutionsToTransfer = new List<string>();
@@ -482,6 +483,7 @@ namespace DamSim.SolutionTransferTool
                 }
 
                 tsbDownloadLogFile.Enabled = false;
+                tsbFindMissingDependencies.Enabled = false;
                 tsbLoadSolutions.Enabled = false;
                 tsbTransfertSolution.Enabled = false;
                 btnAddTarget.Enabled = false;
@@ -534,8 +536,7 @@ namespace DamSim.SolutionTransferTool
         private void tsbFindMissingDependencies_Click(object sender, EventArgs e)
         {
             var child = new MissingComponentsForm();           
-            child.ShowMissingComponents(lastTargetService,service,lastImportId);
-            
+            child.ShowMissingComponents(ParentForm, lastTargetService,service,lastImportId);
         }
 
         private void ToggleWaitMode(bool on)

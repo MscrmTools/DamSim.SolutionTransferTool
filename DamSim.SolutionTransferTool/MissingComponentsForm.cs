@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+
 using System.Data;
+
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
@@ -16,7 +18,7 @@ namespace DamSim.SolutionTransferTool
     public partial class MissingComponentsForm : Form
     {
         #region Fields
-        string SolutionName;
+        string solutionName;
         IOrganizationService _sourceService;
         #endregion
         public MissingComponentsForm()
@@ -24,9 +26,9 @@ namespace DamSim.SolutionTransferTool
             InitializeComponent();
         }
 
-        public void ShowMissingComponents(KeyValuePair<string,IOrganizationService> TargetService,IOrganizationService SourceService,Guid? jobId)
+        public void ShowMissingComponents(Form parent,KeyValuePair<string,IOrganizationService> targetService,IOrganizationService sourceService,Guid? jobId)
         {
-            _sourceService = SourceService;
+            _sourceService = sourceService;
 
             var importQuery = new QueryByAttribute("importjob")
             {
@@ -50,13 +52,26 @@ namespace DamSim.SolutionTransferTool
                 Orders = { new OrderExpression("createdon", OrderType.Descending) }
             };
 
+            Entity jobLog;
+            if (jobId == null)
+            {
+                jobLog = targetService.Value.RetrieveMultiple(lastFailedImportQuery).Entities.FirstOrDefault();
+            }
+            else
+            {
+                jobLog = targetService.Value.RetrieveMultiple(importQuery).Entities.FirstOrDefault();
+            }
 
-            var JobLog = jobId==null? TargetService.Value.RetrieveMultiple(lastFailedImportQuery).Entities[0] : TargetService.Value.RetrieveMultiple(importQuery).Entities[0];
+            if (jobLog == null)
+            {
+                MessageBox.Show(parent, "This feature is only available after a failed solution import");
+                return;
+            }
 
-            SolutionName = JobLog.GetAttributeValue<string>("solutionname");
+            solutionName = jobLog.GetAttributeValue<string>("solutionname");
 
             var dataxml = new XmlDocument();
-            dataxml.LoadXml(JobLog.GetAttributeValue<string>("data"));
+            dataxml.LoadXml(jobLog.GetAttributeValue<string>("data"));
 
 
             var innerDataXml = new XmlDocument();
@@ -65,7 +80,7 @@ namespace DamSim.SolutionTransferTool
 
             if (resultParams == null)
             {
-                MessageBox.Show(@"The parameters of import result are null", "Parameters are null", MessageBoxButtons.OK);
+                MessageBox.Show(@"The solution import did not failed because of missing dependencies", "No missing dependencies", MessageBoxButtons.OK);
                 return;
             }
             innerDataXml.LoadXml(resultParams.ChildNodes[1].ChildNodes[0].Value);
@@ -91,7 +106,7 @@ namespace DamSim.SolutionTransferTool
                 var solutionValue = node.Attributes["solution"]?.Value;
                 if (solutionValue != null && solutionValue != "Active")
                 {
-                    MessageBox.Show($"Environment \"{TargetService.Key}\" needs solution \"{solutionValue}\" to be installed", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show($"Environment \"{targetService.Key}\" needs solution \"{solutionValue}\" to be installed", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
 
@@ -192,7 +207,7 @@ namespace DamSim.SolutionTransferTool
                     {
                         ComponentId = typedTag.Item2,
                         ComponentType = typedTag.Item1,
-                        SolutionUniqueName = SolutionName
+                        SolutionUniqueName = solutionName
                     };
 
                     if (typedTag.Item1 == 1)

@@ -1,5 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
+
 # Visual Studio 15
 VisualStudioVersion = 15.0.25807.0
 MinimumVisualStudioVersion = 10.0.40219.1
@@ -11,7 +12,7 @@ Project("{911E67C6-3D85-4FCE-B560-20A9C3E3FF48}") = "XrmToolBox", "XrmToolBox\bi
 		Executable = D:\Documents\_Работа\SolutionTransferTool\XrmToolBox\bin\Debug\XrmToolBox.exe
 		RemoteMachine = AMBURIN-PC
 		StartingDirectory = D:\Documents\_Работа\SolutionTransferTool\XrmToolBox\bin\Debug
-		Environment = Default
+		Environment = Par défaut
 		LaunchingEngine = 00000000-0000-0000-0000-000000000000
 		UseLegacyDebugEngines = No
 		LaunchSQLEngine = No
@@ -28,8 +29,8 @@ Global
 		{2DA068AE-5B32-46B4-864D-0D8507A6D981}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2DA068AE-5B32-46B4-864D-0D8507A6D981}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2DA068AE-5B32-46B4-864D-0D8507A6D981}.Release|Any CPU.Build.0 = Release|Any CPU
-		{317B0974-807C-4EF0-972F-A497283B3B57}.Debug|Any CPU.ActiveCfg = Release|Any CPU
-		{317B0974-807C-4EF0-972F-A497283B3B57}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{317B0974-807C-4EF0-972F-A497283B3B57}.Debug|Any CPU.ActiveCfg = Release
+		{317B0974-807C-4EF0-972F-A497283B3B57}.Release|Any CPU.ActiveCfg = Release
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
