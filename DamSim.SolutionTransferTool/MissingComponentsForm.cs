@@ -1,5 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+
+using System.Data;
+
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
@@ -98,6 +101,7 @@ namespace DamSim.SolutionTransferTool
                 var type = int.Parse(node.Attributes["type"]?.Value);
                 var typeLabel = options.First(x => x.Key == type).Value;
                 var id = node.Attributes["id"]?.Value;
+                
 
                 var solutionValue = node.Attributes["solution"]?.Value;
                 if (solutionValue != null && solutionValue != "Active")
@@ -131,7 +135,20 @@ namespace DamSim.SolutionTransferTool
                     case 60:
                     case 61:
                         {
-                            componentId = new Guid(id);
+                            if (id != null)
+                            {
+                                componentId = new Guid(id);
+                            }
+                            else if(schemaName!=null)
+                            {
+                                var webResourceQuery = new QueryByAttribute("webresource");
+                                webResourceQuery.AddAttributeValue("name",schemaName);
+
+                                var rWebResource = _sourceService.RetrieveMultiple(webResourceQuery).Entities.FirstOrDefault();
+
+                                if (rWebResource != null)
+                                    componentId = rWebResource.Id;
+                            }
                             break;
                         }
                     case 9:
