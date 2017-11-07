@@ -14,6 +14,9 @@ using XrmToolBox.Extensibility;
 using XrmToolBox.Extensibility.Interfaces;
 using InformationPanel = XrmToolBox.Extensibility.InformationPanel;
 using System.Linq;
+using Microsoft.Xrm.Sdk.Client;
+using Microsoft.Xrm.Sdk.WebServiceClient;
+using Microsoft.Xrm.Tooling.Connector;
 
 namespace DamSim.SolutionTransferTool
 {
@@ -37,7 +40,6 @@ namespace DamSim.SolutionTransferTool
         public SolutionTransferTool()
         {
             InitializeComponent();
-
         }
 
         #endregion Constructor
@@ -88,8 +90,15 @@ namespace DamSim.SolutionTransferTool
             if (actionName == "TargetOrganization")
             {
                 targetServices.Add(detail.ConnectionName, newService);
+                if (newService is OrganizationServiceProxy)
+                    ((OrganizationServiceProxy)newService).Timeout = detail.Timeout;
+                else if (newService is OrganizationWebProxyClient)
+                {
+                    ((OrganizationWebProxyClient)newService).InnerChannel.OperationTimeout = detail.Timeout;
+                }
+
                 lastTargetService = new KeyValuePair<string, IOrganizationService>(detail.ConnectionName, newService);
-                lstTargetEnvironments.Items.Add(new ListViewItem{ Text = detail.ConnectionName });
+                lstTargetEnvironments.Items.Add(new ListViewItem { Text = detail.ConnectionName });
             }
             else
             {
@@ -200,14 +209,9 @@ namespace DamSim.SolutionTransferTool
             }
         }
 
-
-
-
         #endregion UI Events
 
-    
         #region Methods
-
 
         /// <summary>
         /// Downloads the Log file
@@ -282,10 +286,10 @@ namespace DamSim.SolutionTransferTool
                     lblSource.ForeColor = Color.Green;
                     break;
 
-                //case "Target":
-                //    lblTarget.Text = detail.ConnectionName;
-                //    lblTarget.ForeColor = Color.Green;
-                //    break;
+                    //case "Target":
+                    //    lblTarget.Text = detail.ConnectionName;
+                    //    lblTarget.ForeColor = Color.Green;
+                    //    break;
             }
         }
 
@@ -301,21 +305,19 @@ namespace DamSim.SolutionTransferTool
             var solutionName = string.Empty;
             byte[] solutionFileContent = null;
 
-          
-               
-                foreach (var request in requests)
+            foreach (var request in requests)
+            {
+                var exportRequest = request as ExportSolutionRequest;
+                if (exportRequest != null)
                 {
-                    var exportRequest = request as ExportSolutionRequest;
-                    if (exportRequest != null)
-                    {
-                        solutionName = exportRequest.SolutionName;
+                    solutionName = exportRequest.SolutionName;
 
-                        bw.ReportProgress(0, string.Format("Exporting solution {0} ...", solutionName));
-                        var exportResponse = (ExportSolutionResponse)service.Execute(exportRequest);
-                        solutionFileContent = exportResponse.ExportSolutionFile;
+                    bw.ReportProgress(0, string.Format("Exporting solution {0} ...", solutionName));
+                    var exportResponse = (ExportSolutionResponse)service.Execute(exportRequest);
+                    solutionFileContent = exportResponse.ExportSolutionFile;
 
-                       // continue;
-                    }
+                    // continue;
+                }
 
                 foreach (var targetService in targetServices)
                 {
@@ -325,19 +327,19 @@ namespace DamSim.SolutionTransferTool
                     {
                         lastImportId = importRequest.ImportJobId;
 
-                        bw.ReportProgress(0, string.Format("Importing solution {0} to {1}...", solutionName,targetService.Key));
+                        bw.ReportProgress(0, string.Format("Importing solution {0} to {1}...", solutionName, targetService.Key));
                         importRequest.CustomizationFile = solutionFileContent;
                         targetService.Value.Execute(importRequest);
 
-                     //   continue;
+                        //   continue;
                     }
 
                     var publishRequest = request as PublishAllXmlRequest;
                     if (publishRequest != null)
                     {
-                        bw.ReportProgress(0, string.Format("Publishing {0} to {1}...",solutionName,targetService.Key));
+                        bw.ReportProgress(0, string.Format("Publishing {0} to {1}...", solutionName, targetService.Key));
                         targetService.Value.Execute(publishRequest);
-                    //    continue;
+                        //    continue;
                     }
                 }
             }
@@ -374,13 +376,7 @@ namespace DamSim.SolutionTransferTool
 
         private void ChkExportAsManagedCheckedChanged(object sender, EventArgs e)
         {
-            chkConvertToManaged.Enabled = !chkExportAsManaged.Checked;
             chkOverwriteUnmanagedCustomizations.Enabled = chkExportAsManaged.Checked;
-
-            if (chkExportAsManaged.Checked)
-            {
-                chkConvertToManaged.Checked = false;
-            }
         }
 
         private void lstSourceSolutions_ColumnClick(object sender, ColumnClickEventArgs e)
@@ -448,7 +444,6 @@ namespace DamSim.SolutionTransferTool
 
                 var requests = new List<OrganizationRequest>();
 
-
                 foreach (var solution in solutionsToTransfer)
                 {
                     var importId = Guid.NewGuid();
@@ -507,7 +502,7 @@ namespace DamSim.SolutionTransferTool
 
         private void lstTargetEnvironments_KeyDown(Object sender, KeyEventArgs e)
         {
-            if(lstTargetEnvironments.SelectedItems.Count>0 && e.KeyCode==Keys.Delete)
+            if (lstTargetEnvironments.SelectedItems.Count > 0 && e.KeyCode == Keys.Delete)
             {
                 foreach (ListViewItem item in lstTargetEnvironments.Items)
                 {
@@ -527,16 +522,14 @@ namespace DamSim.SolutionTransferTool
             foreach (ListViewItem item in lstTargetEnvironments.Items)
             {
                 var serviceToAdd = oldTargetServices.First(x => x.Key == item.Text);
-                targetServices.Add(serviceToAdd.Key, serviceToAdd.Value);     
+                targetServices.Add(serviceToAdd.Key, serviceToAdd.Value);
             }
-
-
         }
 
         private void tsbFindMissingDependencies_Click(object sender, EventArgs e)
         {
-            var child = new MissingComponentsForm();           
-            child.ShowMissingComponents(ParentForm, lastTargetService,service,lastImportId);
+            var child = new MissingComponentsForm();
+            child.ShowMissingComponents(ParentForm, lastTargetService, service, lastImportId);
         }
 
         private void ToggleWaitMode(bool on)
@@ -564,9 +557,9 @@ namespace DamSim.SolutionTransferTool
 
         private void lstSourceSolutions_KeyDown(Object sender, KeyEventArgs e)
         {
-            if(e.KeyCode == Keys.Enter && lstSourceSolutions.SelectedItems.Count>0)
+            if (e.KeyCode == Keys.Enter && lstSourceSolutions.SelectedItems.Count > 0)
             {
-                System.Diagnostics.Process.Start(SolutionUrlBase+ $"/tools/solution/edit.aspx?id={lstSourceSolutions.SelectedItems[0].Tag.ToString()}");
+                System.Diagnostics.Process.Start(SolutionUrlBase + $"/tools/solution/edit.aspx?id={lstSourceSolutions.SelectedItems[0].Tag.ToString()}");
             }
         }
     }
