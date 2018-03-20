@@ -1,23 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-
 # Visual Studio 15
-VisualStudioVersion = 15.0.25807.0
+VisualStudioVersion = 15.0.27130.2010
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DamSim.SolutionTransferTool", "DamSim.SolutionTransferTool\DamSim.SolutionTransferTool.csproj", "{2DA068AE-5B32-46B4-864D-0D8507A6D981}"
-EndProject
-Project("{911E67C6-3D85-4FCE-B560-20A9C3E3FF48}") = "XrmToolBox", "XrmToolBox\bin\Debug\XrmToolBox.exe", "{317B0974-807C-4EF0-972F-A497283B3B57}"
-	ProjectSection(DebuggerProjectSystem) = preProject
-		PortSupplier = 00000000-0000-0000-0000-000000000000
-		Executable = D:\Documents\_Работа\SolutionTransferTool\XrmToolBox\bin\Debug\XrmToolBox.exe
-		RemoteMachine = AMBURIN-PC
-		StartingDirectory = D:\Documents\_Работа\SolutionTransferTool\XrmToolBox\bin\Debug
-		Environment = Par défaut
-		LaunchingEngine = 00000000-0000-0000-0000-000000000000
-		UseLegacyDebugEngines = No
-		LaunchSQLEngine = No
-		AttachLaunchAction = No
-	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -29,10 +15,11 @@ Global
 		{2DA068AE-5B32-46B4-864D-0D8507A6D981}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2DA068AE-5B32-46B4-864D-0D8507A6D981}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2DA068AE-5B32-46B4-864D-0D8507A6D981}.Release|Any CPU.Build.0 = Release|Any CPU
-		{317B0974-807C-4EF0-972F-A497283B3B57}.Debug|Any CPU.ActiveCfg = Release
-		{317B0974-807C-4EF0-972F-A497283B3B57}.Release|Any CPU.ActiveCfg = Release
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E17AD414-551A-49B6-A2DB-60EF1D1D6F81}
 	EndGlobalSection
 EndGlobal

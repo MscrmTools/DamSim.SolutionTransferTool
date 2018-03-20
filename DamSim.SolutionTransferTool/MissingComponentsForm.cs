@@ -18,15 +18,18 @@ namespace DamSim.SolutionTransferTool
     public partial class MissingComponentsForm : Form
     {
         #region Fields
-        string solutionName;
-        IOrganizationService _sourceService;
-        #endregion
+
+        private string solutionName;
+        private IOrganizationService _sourceService;
+
+        #endregion Fields
+
         public MissingComponentsForm()
         {
             InitializeComponent();
         }
 
-        public void ShowMissingComponents(Form parent,KeyValuePair<string,IOrganizationService> targetService,IOrganizationService sourceService,Guid? jobId)
+        public void ShowMissingComponents(Form parent, IOrganizationService targetService, string lastConnectionName, IOrganizationService sourceService, Guid? jobId)
         {
             _sourceService = sourceService;
 
@@ -43,7 +46,7 @@ namespace DamSim.SolutionTransferTool
                 ColumnSet = new ColumnSet(true),
                 Criteria = new FilterExpression(LogicalOperator.And)
                 {
-                   Conditions =
+                    Conditions =
                    {
                       new ConditionExpression("progress",ConditionOperator.NotEqual,100)
                    }
@@ -55,11 +58,11 @@ namespace DamSim.SolutionTransferTool
             Entity jobLog;
             if (jobId == null)
             {
-                jobLog = targetService.Value.RetrieveMultiple(lastFailedImportQuery).Entities.FirstOrDefault();
+                jobLog = targetService.RetrieveMultiple(lastFailedImportQuery).Entities.FirstOrDefault();
             }
             else
             {
-                jobLog = targetService.Value.RetrieveMultiple(importQuery).Entities.FirstOrDefault();
+                jobLog = targetService.RetrieveMultiple(importQuery).Entities.FirstOrDefault();
             }
 
             if (jobLog == null)
@@ -72,7 +75,6 @@ namespace DamSim.SolutionTransferTool
 
             var dataxml = new XmlDocument();
             dataxml.LoadXml(jobLog.GetAttributeValue<string>("data"));
-
 
             var innerDataXml = new XmlDocument();
 
@@ -101,12 +103,11 @@ namespace DamSim.SolutionTransferTool
                 var type = int.Parse(node.Attributes["type"]?.Value);
                 var typeLabel = options.First(x => x.Key == type).Value;
                 var id = node.Attributes["id"]?.Value;
-                
 
                 var solutionValue = node.Attributes["solution"]?.Value;
                 if (solutionValue != null && solutionValue != "Active")
                 {
-                    MessageBox.Show($"Environment \"{targetService.Key}\" needs solution \"{solutionValue}\" to be installed", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show($"Environment \"{lastConnectionName}\" needs solution \"{solutionValue}\" to be installed", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
 
@@ -139,10 +140,10 @@ namespace DamSim.SolutionTransferTool
                             {
                                 componentId = new Guid(id);
                             }
-                            else if(schemaName!=null)
+                            else if (schemaName != null)
                             {
                                 var webResourceQuery = new QueryByAttribute("webresource");
-                                webResourceQuery.AddAttributeValue("name",schemaName);
+                                webResourceQuery.AddAttributeValue("name", schemaName);
 
                                 var rWebResource = _sourceService.RetrieveMultiple(webResourceQuery).Entities.FirstOrDefault();
 
@@ -172,21 +173,20 @@ namespace DamSim.SolutionTransferTool
                             componentId = (Guid)((RetrieveEntityResponse)_sourceService.Execute(entityMetadata)).EntityMetadata.MetadataId;
                             break;
                         }
-            
                 }
 
                 var item = new ListViewItem
                 {
-                    Tag = new Tuple<int,Guid>(type,componentId),
+                    Tag = new Tuple<int, Guid>(type, componentId),
                     Name = schemaName
                 };
-                if(componentId==Guid.Empty)
+                if (componentId == Guid.Empty)
                 {
                     item.BackColor = Color.Red;
-                }           
+                }
                 item.SubItems.Add(parentSchemaName);
                 item.SubItems.Add(typeLabel);
-                lstMissingComponents.Items.Add(item);          
+                lstMissingComponents.Items.Add(item);
             }
 
             Show();
@@ -217,17 +217,15 @@ namespace DamSim.SolutionTransferTool
                 }
                 catch (Exception ex)
                 {
-                
                     MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
                 item.BackColor = Color.Green;
             }
 
             _sourceService.Execute(new PublishAllXmlRequest());
-           
+
             MessageBox.Show("Missing components were successfully added to solution", "Success", MessageBoxButtons.OK);
             Dispose();
         }
-
     }
 }

@@ -4,6 +4,7 @@ using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
@@ -14,24 +15,24 @@ using XrmToolBox.Extensibility;
 using XrmToolBox.Extensibility.Interfaces;
 using InformationPanel = XrmToolBox.Extensibility.InformationPanel;
 using System.Linq;
+using DamSim.SolutionTransferTool.AppCode;
 using Microsoft.Xrm.Sdk.Client;
 using Microsoft.Xrm.Sdk.WebServiceClient;
 using Microsoft.Xrm.Tooling.Connector;
 
 namespace DamSim.SolutionTransferTool
 {
-    public partial class SolutionTransferTool : UserControl, IXrmToolBoxPluginControl, IGitHubPlugin, IHelpPlugin
+    public partial class SolutionTransferTool : MultipleConnectionsPluginControlBase, IGitHubPlugin, IHelpPlugin
     {
         #region Variables
 
         private int currentsColumnOrder;
-        private ConnectionDetail detail;
         private Guid lastImportId;
         private Panel infoPanel;
-        private string SolutionUrlBase;
-        private IOrganizationService service;
-        private Dictionary<string, IOrganizationService> targetServices = new Dictionary<string, IOrganizationService>();
-        private KeyValuePair<string, IOrganizationService> lastTargetService;
+        private string solutionUrlBase;
+        private string lastConnectionName;
+        private IOrganizationService sourceService;
+        private IOrganizationService lastTargetService;
 
         #endregion Variables
 
@@ -46,67 +47,39 @@ namespace DamSim.SolutionTransferTool
 
         #region XrmToolbox
 
-        public event EventHandler OnCloseTool;
+        public string RepositoryName => "DamSim.SolutionTransferTool";
 
-        public event EventHandler OnRequestConnection;
+        public string UserName => "MscrmTools";
 
-        public Image PluginLogo
+        public string HelpUrl => "https://github.com/MscrmTools/DamSim.SolutionTransferTool/wiki";
+
+        public override void UpdateConnection(IOrganizationService newService, ConnectionDetail detail, string actionName = "", object parameter = null)
         {
-            get { return imageList1.Images[0]; }
-        }
-
-        public IOrganizationService Service
-        {
-            get { return service; }
-        }
-
-        public string RepositoryName
-        {
-            get
+            ConnectionDetail = detail;
+            if (actionName == "AdditionalOrganization")
             {
-                return "DamSim.SolutionTransferTool";
-            }
-        }
+                AdditionalConnectionDetails.Add(detail);
 
-        public string UserName
-        {
-            get
-            {
-                return "MscrmTools";
-            }
-        }
-
-        public string HelpUrl
-        {
-            get
-            {
-                return "https://github.com/MscrmTools/DamSim.SolutionTransferTool/wiki";
-            }
-        }
-
-        public void UpdateConnection(IOrganizationService newService, ConnectionDetail detail, string actionName = "", object parameter = null)
-        {
-            this.detail = detail;
-            if (actionName == "TargetOrganization")
-            {
-                targetServices.Add(detail.ConnectionName, newService);
-                if (newService is OrganizationServiceProxy)
-                    ((OrganizationServiceProxy)newService).Timeout = detail.Timeout;
+                if (newService is OrganizationServiceProxy proxy)
+                    proxy.Timeout = detail.Timeout;
                 else if (newService is OrganizationWebProxyClient)
                 {
                     ((OrganizationWebProxyClient)newService).InnerChannel.OperationTimeout = detail.Timeout;
                 }
-
-                lastTargetService = new KeyValuePair<string, IOrganizationService>(detail.ConnectionName, newService);
-                lstTargetEnvironments.Items.Add(new ListViewItem { Text = detail.ConnectionName });
             }
             else
             {
-                service = newService;
-                SolutionUrlBase = detail.WebApplicationUrl;
+                sourceService = newService;
+                solutionUrlBase = detail.WebApplicationUrl;
                 SetConnectionLabel(detail, "Source");
                 RetrieveSolutions();
             }
+        }
+
+        protected override void ConnectionDetailsUpdated(NotifyCollectionChangedEventArgs e)
+        {
+            lstTargetEnvironments.Items.Clear();
+            lstTargetEnvironments.Items.AddRange(AdditionalConnectionDetails.Select(cd => new ListViewItem(cd.ConnectionName) { Tag = cd }).ToArray());
         }
 
         private void WorkerProgressChanged(object sender, ProgressChangedEventArgs e)
@@ -151,13 +124,7 @@ namespace DamSim.SolutionTransferTool
 
         private void BtnCloseClick(object sender, EventArgs e)
         {
-            if (OnCloseTool != null)
-            {
-                const string message = "Are you sure to exit?";
-                if (MessageBox.Show(message, "Question", MessageBoxButtons.YesNo, MessageBoxIcon.Question) ==
-                    DialogResult.Yes)
-                    OnCloseTool(this, null);
-            }
+            CloseTool();
         }
 
         private void BtnDownloadLogClick(object sender, EventArgs e)
@@ -202,11 +169,7 @@ namespace DamSim.SolutionTransferTool
 
         private void BtnSelectTargetClick(object sender, EventArgs e)
         {
-            if (OnRequestConnection != null)
-            {
-                var args = new RequestConnectionEventArgs { ActionName = "TargetOrganization", Control = this };
-                OnRequestConnection(this, args);
-            }
+            AddAdditionalOrganization();
         }
 
         #endregion UI Events
@@ -223,7 +186,7 @@ namespace DamSim.SolutionTransferTool
             {
                 ImportJobId = lastImportId
             };
-            var importLogResponse = (RetrieveFormattedImportJobResultsResponse)lastTargetService.Value.Execute(importLogRequest);
+            var importLogResponse = (RetrieveFormattedImportJobResultsResponse)lastTargetService.Execute(importLogRequest);
 
             var filePath = string.Format(@"{0}\{1}.xml", path, DateTime.Now.ToString("yyyy_MM_dd__HH_mm"));
             File.WriteAllText(filePath, importLogResponse.FormattedResults);
@@ -254,7 +217,7 @@ namespace DamSim.SolutionTransferTool
             sourceSolutionsQuery.Criteria.AddCondition("isvisible", ConditionOperator.Equal, true);
             sourceSolutionsQuery.Criteria.AddCondition("uniquename", ConditionOperator.NotEqual, "Default");
 
-            var solutions = service.RetrieveMultiple(sourceSolutionsQuery);
+            var solutions = sourceService.RetrieveMultiple(sourceSolutionsQuery);
 
             foreach (var solution in solutions.Entities)
             {
@@ -313,66 +276,35 @@ namespace DamSim.SolutionTransferTool
                     solutionName = exportRequest.SolutionName;
 
                     bw.ReportProgress(0, string.Format("Exporting solution {0} ...", solutionName));
-                    var exportResponse = (ExportSolutionResponse)service.Execute(exportRequest);
+                    var exportResponse = (ExportSolutionResponse)sourceService.Execute(exportRequest);
                     solutionFileContent = exportResponse.ExportSolutionFile;
 
                     // continue;
                 }
 
-                foreach (var targetService in targetServices)
+                foreach (var targetConnectionDetail in AdditionalConnectionDetails)
                 {
-                    lastTargetService = targetService;
-                    var importRequest = request as ImportSolutionRequest;
-                    if (importRequest != null)
+                    lastConnectionName = targetConnectionDetail.ConnectionName;
+                    lastTargetService = targetConnectionDetail.GetCrmServiceClient();
+                    if (request is ImportSolutionRequest importRequest)
                     {
                         lastImportId = importRequest.ImportJobId;
 
-                        bw.ReportProgress(0, string.Format("Importing solution {0} to {1}...", solutionName, targetService.Key));
+                        bw.ReportProgress(0, string.Format("Importing solution {0} to {1}...", solutionName, targetConnectionDetail.ConnectionName));
                         importRequest.CustomizationFile = solutionFileContent;
-                        targetService.Value.Execute(importRequest);
-
-                        //   continue;
+                        lastTargetService.Execute(importRequest);
                     }
 
-                    var publishRequest = request as PublishAllXmlRequest;
-                    if (publishRequest != null)
+                    if (request is PublishAllXmlRequest publishRequest)
                     {
-                        bw.ReportProgress(0, string.Format("Publishing {0} to {1}...", solutionName, targetService.Key));
-                        targetService.Value.Execute(publishRequest);
-                        //    continue;
+                        bw.ReportProgress(0, string.Format("Publishing {0} to {1}...", solutionName, targetConnectionDetail.ConnectionName));
+                        lastTargetService.Execute(publishRequest);
                     }
                 }
             }
         }
 
         #endregion Methods
-
-        public void ClosingPlugin(PluginCloseInfo info)
-        {
-            if (info.FormReason != CloseReason.None ||
-                info.ToolBoxReason == ToolBoxCloseReason.CloseAll ||
-                info.ToolBoxReason == ToolBoxCloseReason.CloseAllExceptActive)
-            {
-                return;
-            }
-
-            info.Cancel = MessageBox.Show(@"Are you sure you want to close this tab?", @"Question", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes;
-        }
-
-        public string GetCompany()
-        {
-            return GetType().GetCompany();
-        }
-
-        public string GetMyType()
-        {
-            return GetType().FullName;
-        }
-
-        public string GetVersion()
-        {
-            return GetType().Assembly.GetName().Version.ToString();
-        }
 
         private void ChkExportAsManagedCheckedChanged(object sender, EventArgs e)
         {
@@ -396,23 +328,12 @@ namespace DamSim.SolutionTransferTool
 
         private void TsbLoadSolutionsClick(object sender, EventArgs e)
         {
-            if (service == null)
-            {
-                if (OnRequestConnection != null)
-                {
-                    var args = new RequestConnectionEventArgs { ActionName = "WhoAmI", Control = this, Parameter = null };
-                    OnRequestConnection(this, args);
-                }
-            }
-            else
-            {
-                RetrieveSolutions();
-            }
+            ExecuteMethod(RetrieveSolutions);
         }
 
         private void TsbTransfertSolutionClick(object sender, EventArgs e)
         {
-            if (lstSourceSolutions.SelectedItems.Count > 0 && targetServices.Any())
+            if (lstSourceSolutions.SelectedItems.Count > 0 && AdditionalConnectionDetails.Any())
             {
                 var item = lstSourceSolutions.SelectedItems[0];
 
@@ -507,29 +428,18 @@ namespace DamSim.SolutionTransferTool
                 foreach (ListViewItem item in lstTargetEnvironments.Items)
                 {
                     if (item.Selected)
+                    {
                         lstTargetEnvironments.Items.Remove(item);
+                        RemoveAdditionalOrganization((ConnectionDetail)item.Tag);
+                    }
                 }
-
-                ReorderTargetServices();
-            }
-        }
-
-        private void ReorderTargetServices()
-        {
-            var oldTargetServices = targetServices;
-            targetServices = new Dictionary<string, IOrganizationService>();
-
-            foreach (ListViewItem item in lstTargetEnvironments.Items)
-            {
-                var serviceToAdd = oldTargetServices.First(x => x.Key == item.Text);
-                targetServices.Add(serviceToAdd.Key, serviceToAdd.Value);
             }
         }
 
         private void tsbFindMissingDependencies_Click(object sender, EventArgs e)
         {
             var child = new MissingComponentsForm();
-            child.ShowMissingComponents(ParentForm, lastTargetService, service, lastImportId);
+            child.ShowMissingComponents(ParentForm, lastTargetService, lastConnectionName, sourceService, lastImportId);
         }
 
         private void ToggleWaitMode(bool on)
@@ -559,7 +469,7 @@ namespace DamSim.SolutionTransferTool
         {
             if (e.KeyCode == Keys.Enter && lstSourceSolutions.SelectedItems.Count > 0)
             {
-                System.Diagnostics.Process.Start(SolutionUrlBase + $"/tools/solution/edit.aspx?id={lstSourceSolutions.SelectedItems[0].Tag.ToString()}");
+                System.Diagnostics.Process.Start(solutionUrlBase + $"/tools/solution/edit.aspx?id={lstSourceSolutions.SelectedItems[0].Tag.ToString()}");
             }
         }
     }
