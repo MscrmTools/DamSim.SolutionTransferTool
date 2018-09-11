@@ -29,6 +29,7 @@ namespace DamSim.SolutionTransferTool
         private Guid lastImportId;
         private IOrganizationService lastTargetService;
         private string solutionUrlBase;
+        private ConnectionDetail sourceDetail;
         private IOrganizationService sourceService;
 
         #endregion Variables
@@ -65,6 +66,7 @@ namespace DamSim.SolutionTransferTool
             }
             else
             {
+                sourceDetail = detail;
                 sourceService = newService;
                 solutionUrlBase = detail.WebApplicationUrl;
                 SetConnectionLabel(detail, "Source");
@@ -75,7 +77,12 @@ namespace DamSim.SolutionTransferTool
         protected override void ConnectionDetailsUpdated(NotifyCollectionChangedEventArgs e)
         {
             lstTargetEnvironments.Items.Clear();
-            lstTargetEnvironments.Items.AddRange(AdditionalConnectionDetails.Select(cd => new ListViewItem(cd.ConnectionName) { Tag = cd }).ToArray());
+
+            if (AdditionalConnectionDetails.All(c => c != null))
+            {
+                lstTargetEnvironments.Items.AddRange(AdditionalConnectionDetails
+                    .Select(cd => new ListViewItem(cd.ConnectionName) { Tag = cd }).ToArray());
+            }
         }
 
         private void WorkerProgressChanged(object sender, ProgressChangedEventArgs e)
@@ -381,6 +388,45 @@ Would you like to open the file now ({args.Result})?
         private void TsbLoadSolutionsClick(object sender, EventArgs e)
         {
             ExecuteMethod(RetrieveSolutions);
+        }
+
+        private void tsbSwitchOrgs_Click(object sender, EventArgs e)
+        {
+            if (AdditionalConnectionDetails.Count > 1)
+            {
+                MessageBox.Show(this,
+                    @"Switch can only be performed when no more than one target organization is defined",
+                    @"Warning",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+                return;
+            }
+
+            var tempDetail = sourceDetail;
+            sourceDetail = AdditionalConnectionDetails.FirstOrDefault();
+            ConnectionDetail = AdditionalConnectionDetails.FirstOrDefault();
+            AdditionalConnectionDetails.Clear();
+            lstTargetEnvironments.Clear();
+
+            if (tempDetail != null)
+            {
+                AdditionalConnectionDetails.Add(tempDetail);
+            }
+
+            if (sourceDetail != null)
+            {
+                sourceService = sourceDetail.GetCrmServiceClient();
+                solutionUrlBase = sourceDetail.WebApplicationUrl;
+                SetConnectionLabel(sourceDetail, "Source");
+                base.UpdateConnection(sourceService, sourceDetail, "", null);
+                RetrieveSolutions();
+            }
+            else
+            {
+                lblSource.Text = @"Not selected yet";
+                lblSource.ForeColor = Color.Red;
+                lstSourceSolutions.Items.Clear();
+            }
         }
 
         private void TsbTransfertSolutionClick(object sender, EventArgs e)

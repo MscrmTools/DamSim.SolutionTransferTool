@@ -81,6 +81,8 @@ namespace DamSim.SolutionTransferTool
             this.chkExternalApplications = new System.Windows.Forms.CheckBox();
             this.chkStageForUpgrade = new System.Windows.Forms.CheckBox();
             this.chkSkipProductUpdateDependencies = new System.Windows.Forms.CheckBox();
+            this.toolStripSeparator4 = new System.Windows.Forms.ToolStripSeparator();
+            this.tsbSwitchOrgs = new System.Windows.Forms.ToolStripButton();
             this.toolStrip1.SuspendLayout();
             this.grpSourceSolution.SuspendLayout();
             this.panel1.SuspendLayout();
@@ -94,13 +96,14 @@ namespace DamSim.SolutionTransferTool
             // 
             // toolStrip1
             // 
-            this.toolStrip1.ImageScalingSize = new System.Drawing.Size(28, 28);
             this.toolStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.btnClose,
             this.toolStripSeparator1,
             this.tsbLoadSolutions,
             this.toolStripSeparator2,
             this.tsbTransfertSolution,
+            this.toolStripSeparator4,
+            this.tsbSwitchOrgs,
             this.toolStripSeparator3,
             this.tsbDownloadLogFile,
             this.tsbFindMissingDependencies});
@@ -640,6 +643,21 @@ namespace DamSim.SolutionTransferTool
             this.chkSkipProductUpdateDependencies.Text = "Skip product update dependencies";
             this.chkSkipProductUpdateDependencies.UseVisualStyleBackColor = true;
             // 
+            // toolStripSeparator4
+            // 
+            this.toolStripSeparator4.Name = "toolStripSeparator4";
+            this.toolStripSeparator4.Size = new System.Drawing.Size(6, 37);
+            // 
+            // tsbSwitchOrgs
+            // 
+            this.tsbSwitchOrgs.Image = global::DamSim.SolutionTransferTool.Properties.Resources.arrow_switch;
+            this.tsbSwitchOrgs.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.tsbSwitchOrgs.Name = "tsbSwitchOrgs";
+            this.tsbSwitchOrgs.Size = new System.Drawing.Size(224, 34);
+            this.tsbSwitchOrgs.Text = "Switch organizations";
+            this.tsbSwitchOrgs.ToolTipText = "Switch source and target organizations";
+            this.tsbSwitchOrgs.Click += new System.EventHandler(this.tsbSwitchOrgs_Click);
+            // 
             // SolutionTransferTool
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(11F, 24F);
@@ -722,5 +740,7 @@ namespace DamSim.SolutionTransferTool
         private CheckBox chkSales;
         private CheckBox chkSkipProductUpdateDependencies;
         private CheckBox chkStageForUpgrade;
+        private ToolStripSeparator toolStripSeparator4;
+        private ToolStripButton tsbSwitchOrgs;
     }
 }
