@@ -1,7 +1,9 @@
 ﻿using McTools.Xrm.Connection;
 using Microsoft.Crm.Sdk.Messages;
 using Microsoft.Xrm.Sdk;
+using Microsoft.Xrm.Sdk.Client;
 using Microsoft.Xrm.Sdk.Query;
+using Microsoft.Xrm.Sdk.WebServiceClient;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
@@ -9,16 +11,11 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Windows.Forms;
-using System.Xml;
 using XrmToolBox.Extensibility;
 using XrmToolBox.Extensibility.Interfaces;
 using InformationPanel = XrmToolBox.Extensibility.InformationPanel;
-using System.Linq;
-using DamSim.SolutionTransferTool.AppCode;
-using Microsoft.Xrm.Sdk.Client;
-using Microsoft.Xrm.Sdk.WebServiceClient;
-using Microsoft.Xrm.Tooling.Connector;
 
 namespace DamSim.SolutionTransferTool
 {
@@ -27,12 +24,12 @@ namespace DamSim.SolutionTransferTool
         #region Variables
 
         private int currentsColumnOrder;
-        private Guid lastImportId;
         private Panel infoPanel;
-        private string solutionUrlBase;
         private string lastConnectionName;
-        private IOrganizationService sourceService;
+        private Guid lastImportId;
         private IOrganizationService lastTargetService;
+        private string solutionUrlBase;
+        private IOrganizationService sourceService;
 
         #endregion Variables
 
@@ -47,11 +44,10 @@ namespace DamSim.SolutionTransferTool
 
         #region XrmToolbox
 
+        public string HelpUrl => "https://github.com/MscrmTools/DamSim.SolutionTransferTool/wiki";
         public string RepositoryName => "DamSim.SolutionTransferTool";
 
         public string UserName => "MscrmTools";
-
-        public string HelpUrl => "https://github.com/MscrmTools/DamSim.SolutionTransferTool/wiki";
 
         public override void UpdateConnection(IOrganizationService newService, ConnectionDetail detail, string actionName = "", object parameter = null)
         {
@@ -106,15 +102,15 @@ namespace DamSim.SolutionTransferTool
 
             if (e.Error != null)
             {
-                message = string.Format("An error occured: {0}", e.Error.Message);
-                MessageBox.Show(message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                message = $"An error occured: {e.Error.Message}";
+                MessageBox.Show(message, @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 tsbDownloadLogFile.Enabled = true;
                 tsbFindMissingDependencies.Enabled = true;
             }
             else
             {
                 message = "Import finished successfully!";
-                MessageBox.Show(message, "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show(message, @"Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
 
@@ -148,14 +144,18 @@ namespace DamSim.SolutionTransferTool
                     if (args.Error != null)
                     {
                         var message = string.Format("An error was encountered while downloading the log file.{0}Error:{0}{1}", Environment.NewLine, args.Error.Message);
-                        MessageBox.Show(message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show(message, @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                     else
                     {
                         if (
                             MessageBox.Show(
-                                string.Format("Download completed!\r\n\r\nWould you like to open the file now ({0})?\r\n\r\n(Microsoft Excel is required)", args.Result),
-                                "File Download", MessageBoxButtons.YesNo, MessageBoxIcon.Information) ==
+                                $@"Download completed!
+
+Would you like to open the file now ({args.Result})?
+
+(Microsoft Excel is required)",
+                                @"File Download", MessageBoxButtons.YesNo, MessageBoxIcon.Information) ==
                             DialogResult.Yes)
                         {
                             Process.Start("Excel.exe", args.Result.ToString());
@@ -238,7 +238,7 @@ namespace DamSim.SolutionTransferTool
         /// <summary>
         /// Sets the connections labels on either the source/target section
         /// </summary>
-        /// <param name="serviceToLabel"></param>
+        /// <param name="detail"></param>
         /// <param name="serviceType"></param>
         private void SetConnectionLabel(ConnectionDetail detail, string serviceType)
         {
@@ -326,6 +326,58 @@ namespace DamSim.SolutionTransferTool
             }
         }
 
+        private void lstSourceSolutions_KeyDown(Object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Enter && lstSourceSolutions.SelectedItems.Count > 0)
+            {
+                Process.Start(solutionUrlBase + $"/tools/solution/edit.aspx?id={lstSourceSolutions.SelectedItems[0].Tag}");
+            }
+        }
+
+        private void lstTargetEnvironments_KeyDown(Object sender, KeyEventArgs e)
+        {
+            if (lstTargetEnvironments.SelectedItems.Count > 0 && e.KeyCode == Keys.Delete)
+            {
+                foreach (ListViewItem item in lstTargetEnvironments.Items)
+                {
+                    if (item.Selected)
+                    {
+                        lstTargetEnvironments.Items.Remove(item);
+                        RemoveAdditionalOrganization((ConnectionDetail)item.Tag);
+                    }
+                }
+            }
+        }
+
+        private void ToggleWaitMode(bool on)
+        {
+            if (on)
+            {
+                Cursor = Cursors.WaitCursor;
+                btnAddTarget.Enabled = false;
+                tsbTransfertSolution.Enabled = false;
+                tsbLoadSolutions.Enabled = false;
+                tsbDownloadLogFile.Enabled = false;
+                tsbFindMissingDependencies.Enabled = false;
+            }
+            else
+            {
+                btnAddTarget.Enabled = true;
+                tsbTransfertSolution.Enabled = true;
+                tsbLoadSolutions.Enabled = true;
+                tsbDownloadLogFile.Enabled = true;
+                tsbFindMissingDependencies.Enabled = true;
+
+                Cursor = Cursors.Default;
+            }
+        }
+
+        private void tsbFindMissingDependencies_Click(object sender, EventArgs e)
+        {
+            var child = new MissingComponentsForm();
+            child.ShowMissingComponents(ParentForm, lastTargetService, lastConnectionName, sourceService, lastImportId);
+        }
+
         private void TsbLoadSolutionsClick(object sender, EventArgs e)
         {
             ExecuteMethod(RetrieveSolutions);
@@ -381,7 +433,9 @@ namespace DamSim.SolutionTransferTool
                         ExportIsvConfig = chkIsvConfig.Checked,
                         ExportMarketingSettings = chkMarketing.Checked,
                         ExportOutlookSynchronizationSettings = chkOutlookSynchronization.Checked,
-                        ExportRelationshipRoles = chkRelationshipRoles.Checked
+                        ExportRelationshipRoles = chkRelationshipRoles.Checked,
+                        ExportSales = chkSales.Checked,
+                        ExportExternalApplications = chkExternalApplications.Checked
                     });
 
                     requests.Add(new ImportSolutionRequest
@@ -389,7 +443,9 @@ namespace DamSim.SolutionTransferTool
                         ConvertToManaged = chkConvertToManaged.Checked,
                         OverwriteUnmanagedCustomizations = chkOverwriteUnmanagedCustomizations.Checked,
                         PublishWorkflows = chkActivate.Checked,
-                        ImportJobId = importId
+                        ImportJobId = importId,
+                        HoldingSolution = chkStageForUpgrade.Checked,
+                        SkipProductUpdateDependencies = chkSkipProductUpdateDependencies.Checked
                     });
                 }
 
@@ -416,60 +472,8 @@ namespace DamSim.SolutionTransferTool
             }
             else
             {
-                MessageBox.Show("You have to select a source solution and a target organization to continue.", "Warning",
+                MessageBox.Show(@"You have to select a source solution and a target organization to continue.", @"Warning",
                                 MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            }
-        }
-
-        private void lstTargetEnvironments_KeyDown(Object sender, KeyEventArgs e)
-        {
-            if (lstTargetEnvironments.SelectedItems.Count > 0 && e.KeyCode == Keys.Delete)
-            {
-                foreach (ListViewItem item in lstTargetEnvironments.Items)
-                {
-                    if (item.Selected)
-                    {
-                        lstTargetEnvironments.Items.Remove(item);
-                        RemoveAdditionalOrganization((ConnectionDetail)item.Tag);
-                    }
-                }
-            }
-        }
-
-        private void tsbFindMissingDependencies_Click(object sender, EventArgs e)
-        {
-            var child = new MissingComponentsForm();
-            child.ShowMissingComponents(ParentForm, lastTargetService, lastConnectionName, sourceService, lastImportId);
-        }
-
-        private void ToggleWaitMode(bool on)
-        {
-            if (on)
-            {
-                Cursor = Cursors.WaitCursor;
-                btnAddTarget.Enabled = false;
-                tsbTransfertSolution.Enabled = false;
-                tsbLoadSolutions.Enabled = false;
-                tsbDownloadLogFile.Enabled = false;
-                tsbFindMissingDependencies.Enabled = false;
-            }
-            else
-            {
-                btnAddTarget.Enabled = true;
-                tsbTransfertSolution.Enabled = true;
-                tsbLoadSolutions.Enabled = true;
-                tsbDownloadLogFile.Enabled = true;
-                tsbFindMissingDependencies.Enabled = true;
-
-                Cursor = Cursors.Default;
-            }
-        }
-
-        private void lstSourceSolutions_KeyDown(Object sender, KeyEventArgs e)
-        {
-            if (e.KeyCode == Keys.Enter && lstSourceSolutions.SelectedItems.Count > 0)
-            {
-                System.Diagnostics.Process.Start(solutionUrlBase + $"/tools/solution/edit.aspx?id={lstSourceSolutions.SelectedItems[0].Tag.ToString()}");
             }
         }
     }
