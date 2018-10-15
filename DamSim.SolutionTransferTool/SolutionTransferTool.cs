@@ -1,21 +1,22 @@
-﻿using McTools.Xrm.Connection;
+﻿using DamSim.SolutionTransferTool.AppCode;
+using DamSim.SolutionTransferTool.Forms;
+using McTools.Xrm.Connection;
 using Microsoft.Crm.Sdk.Messages;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Client;
 using Microsoft.Xrm.Sdk.Query;
 using Microsoft.Xrm.Sdk.WebServiceClient;
+using Microsoft.Xrm.Tooling.Connector;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
-using System.ComponentModel;
 using System.Diagnostics;
-using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Windows.Forms;
+using WeifenLuo.WinFormsUI.Docking;
 using XrmToolBox.Extensibility;
 using XrmToolBox.Extensibility.Interfaces;
-using InformationPanel = XrmToolBox.Extensibility.InformationPanel;
 
 namespace DamSim.SolutionTransferTool
 {
@@ -23,12 +24,13 @@ namespace DamSim.SolutionTransferTool
     {
         #region Variables
 
-        private int currentsColumnOrder;
-        private Panel infoPanel;
+        private readonly MainForm mForm;
+        private readonly ProgressForm pForm;
+        private OrganizationRequest currentRequest;
         private string lastConnectionName;
         private Guid lastImportId;
         private IOrganizationService lastTargetService;
-        private string solutionUrlBase;
+        private Dictionary<OrganizationRequest, ProgressItem> progressItems;
         private ConnectionDetail sourceDetail;
         private IOrganizationService sourceService;
 
@@ -39,9 +41,37 @@ namespace DamSim.SolutionTransferTool
         public SolutionTransferTool()
         {
             InitializeComponent();
+
+            dpMain.Theme = new VS2015LightTheme();
+
+            mForm = new MainForm();
+            mForm.TargetOrganizationRemoved += MForm_TargetOrganizationRemoved;
+            mForm.TargetOrganizationRequested += MForm_TargetOrganizationRequested;
+            mForm.Show(dpMain, DockState.Document);
+
+            pForm = new ProgressForm();
+            pForm.Show(dpMain, DockState.DockRight);
+
+            var sForm = new SettingsForm();
+            sForm.Show(dpMain, DockState.DockRight);
         }
 
         #endregion Constructor
+
+        #region Forms events callback
+
+        private void MForm_TargetOrganizationRemoved(object sender, TargetOrganizationsEventArgs e)
+        {
+            var toRemove = AdditionalConnectionDetails.FirstOrDefault(c => !e.TargetOrganizations.Contains(c));
+            RemoveAdditionalOrganization(toRemove);
+        }
+
+        private void MForm_TargetOrganizationRequested(object sender, EventArgs e)
+        {
+            AddAdditionalOrganization();
+        }
+
+        #endregion Forms events callback
 
         #region XrmToolbox
 
@@ -50,7 +80,14 @@ namespace DamSim.SolutionTransferTool
 
         public string UserName => "MscrmTools";
 
-        public override void UpdateConnection(IOrganizationService newService, ConnectionDetail detail, string actionName = "", object parameter = null)
+        public override void ClosingPlugin(PluginCloseInfo info)
+        {
+            Settings.Instance.Save();
+
+            base.ClosingPlugin(info);
+        }
+
+        public override void UpdateConnection(IOrganizationService newService, ConnectionDetail detail, string actionName, object parameter)
         {
             ConnectionDetail = detail;
             if (actionName == "AdditionalOrganization")
@@ -58,325 +95,38 @@ namespace DamSim.SolutionTransferTool
                 AdditionalConnectionDetails.Add(detail);
 
                 if (newService is OrganizationServiceProxy proxy)
-                    proxy.Timeout = detail.Timeout;
-                else if (newService is OrganizationWebProxyClient)
                 {
-                    ((OrganizationWebProxyClient)newService).InnerChannel.OperationTimeout = detail.Timeout;
+                    proxy.Timeout = detail.Timeout;
                 }
+                else if (newService is OrganizationWebProxyClient client)
+                {
+                    client.InnerChannel.OperationTimeout = detail.Timeout;
+                }
+
+                mForm.DisplayTargetOrganizations(AdditionalConnectionDetails.ToList());
             }
             else
             {
                 sourceDetail = detail;
                 sourceService = newService;
-                solutionUrlBase = detail.WebApplicationUrl;
-                SetConnectionLabel(detail, "Source");
                 RetrieveSolutions();
+
+                mForm.SetSourceOrganization(detail);
             }
         }
 
         protected override void ConnectionDetailsUpdated(NotifyCollectionChangedEventArgs e)
         {
-            lstTargetEnvironments.Items.Clear();
-
-            if (AdditionalConnectionDetails.All(c => c != null))
-            {
-                lstTargetEnvironments.Items.AddRange(AdditionalConnectionDetails
-                    .Select(cd => new ListViewItem(cd.ConnectionName) { Tag = cd }).ToArray());
-            }
-        }
-
-        private void WorkerProgressChanged(object sender, ProgressChangedEventArgs e)
-        {
-            InformationPanel.ChangeInformationPanelMessage(infoPanel, e.UserState.ToString());
-        }
-
-        /// <summary>
-        /// Executes once the work is done, ie the solution import.
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void WorkerRunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
-        {
-            infoPanel.Dispose();
-            Controls.Remove(infoPanel);
-
-            tsbLoadSolutions.Enabled = true;
-            tsbTransfertSolution.Enabled = true;
-            btnAddTarget.Enabled = true;
-            Cursor = Cursors.Default;
-
-            string message;
-
-            if (e.Error != null)
-            {
-                message = $"An error occured: {e.Error.Message}";
-                MessageBox.Show(message, @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                tsbDownloadLogFile.Enabled = true;
-                tsbFindMissingDependencies.Enabled = true;
-            }
-            else
-            {
-                message = "Import finished successfully!";
-                MessageBox.Show(message, @"Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
+            mForm.DisplayTargetOrganizations(AdditionalConnectionDetails.ToList());
         }
 
         #endregion XrmToolbox
 
         #region UI Events
 
-        private void BtnCloseClick(object sender, EventArgs e)
+        private void Pi_LogFileRequested(object sender, DownloadLogEventArgs e)
         {
-            CloseTool();
-        }
-
-        private void BtnDownloadLogClick(object sender, EventArgs e)
-        {
-            var dialog = new FolderBrowserDialog();
-
-            if (!string.IsNullOrWhiteSpace(Properties.Settings.Default.LastFolderUsed))
-                dialog.SelectedPath = Properties.Settings.Default.LastFolderUsed;
-
-            if (dialog.ShowDialog() == DialogResult.OK)
-            {
-                Properties.Settings.Default.LastFolderUsed = dialog.SelectedPath;
-                Properties.Settings.Default.Save();
-
-                ToggleWaitMode(true);
-
-                var worker = new BackgroundWorker();
-                worker.DoWork += (o, args) => args.Result = DownloadLogFile(dialog.SelectedPath);
-                worker.RunWorkerCompleted += (o, args) =>
-                {
-                    if (args.Error != null)
-                    {
-                        var message = string.Format("An error was encountered while downloading the log file.{0}Error:{0}{1}", Environment.NewLine, args.Error.Message);
-                        MessageBox.Show(message, @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
-                    else
-                    {
-                        if (
-                            MessageBox.Show(
-                                $@"Download completed!
-
-Would you like to open the file now ({args.Result})?
-
-(Microsoft Excel is required)",
-                                @"File Download", MessageBoxButtons.YesNo, MessageBoxIcon.Information) ==
-                            DialogResult.Yes)
-                        {
-                            Process.Start("Excel.exe", args.Result.ToString());
-                        }
-                    }
-                    ToggleWaitMode(false);
-                };
-                worker.RunWorkerAsync();
-            }
-        }
-
-        private void BtnSelectTargetClick(object sender, EventArgs e)
-        {
-            AddAdditionalOrganization();
-        }
-
-        #endregion UI Events
-
-        #region Methods
-
-        /// <summary>
-        /// Downloads the Log file
-        /// </summary>
-        /// <param name="path"></param>
-        private string DownloadLogFile(string path)
-        {
-            var importLogRequest = new RetrieveFormattedImportJobResultsRequest
-            {
-                ImportJobId = lastImportId
-            };
-            var importLogResponse = (RetrieveFormattedImportJobResultsResponse)lastTargetService.Execute(importLogRequest);
-
-            var filePath = string.Format(@"{0}\{1}.xml", path, DateTime.Now.ToString("yyyy_MM_dd__HH_mm"));
-            File.WriteAllText(filePath, importLogResponse.FormattedResults);
-
-            return filePath;
-        }
-
-        /// <summary>
-        /// Retrieves unmanaged solutions from the source organization
-        /// </summary>
-        private void RetrieveSolutions()
-        {
-            lstSourceSolutions.Items.Clear();
-
-            var sourceSolutionsQuery = new QueryExpression
-            {
-                EntityName = "solution",
-                ColumnSet =
-                                                   new ColumnSet(new[]
-                                                                     {
-                                                                         "publisherid", "installedon", "version",
-                                                                         "uniquename", "friendlyname", "description"
-                                                                     }),
-                Criteria = new FilterExpression()
-            };
-
-            sourceSolutionsQuery.Criteria.AddCondition("ismanaged", ConditionOperator.Equal, false);
-            sourceSolutionsQuery.Criteria.AddCondition("isvisible", ConditionOperator.Equal, true);
-            sourceSolutionsQuery.Criteria.AddCondition("uniquename", ConditionOperator.NotEqual, "Default");
-
-            var solutions = sourceService.RetrieveMultiple(sourceSolutionsQuery);
-
-            foreach (var solution in solutions.Entities)
-            {
-                var item = new ListViewItem
-                {
-                    Tag = solution.GetAttributeValue<Guid>("solutionid"),
-                    Text = solution.GetAttributeValue<String>("uniquename")
-                };
-                item.SubItems.Add(solution.GetAttributeValue<String>("friendlyname"));
-                item.SubItems.Add(solution.GetAttributeValue<String>("version"));
-                item.SubItems.Add(solution.GetAttributeValue<DateTime>("installedon").ToString("yy-MM-dd HH:mm"));
-                item.SubItems.Add(solution.GetAttributeValue<EntityReference>("publisherid").Name);
-                item.SubItems.Add(solution.GetAttributeValue<String>("description"));
-                lstSourceSolutions.Items.Add(item);
-            }
-        }
-
-        /// <summary>
-        /// Sets the connections labels on either the source/target section
-        /// </summary>
-        /// <param name="detail"></param>
-        /// <param name="serviceType"></param>
-        private void SetConnectionLabel(ConnectionDetail detail, string serviceType)
-        {
-            switch (serviceType)
-            {
-                case "Source":
-                    lblSource.Text = detail.ConnectionName;
-                    lblSource.ForeColor = Color.Green;
-                    break;
-
-                    //case "Target":
-                    //    lblTarget.Text = detail.ConnectionName;
-                    //    lblTarget.ForeColor = Color.Green;
-                    //    break;
-            }
-        }
-
-        /// <summary>
-        /// Exports the selected solution as a managed one, and imports it on the target organization
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void WorkerDoWorkExport(object sender, DoWorkEventArgs e)
-        {
-            var bw = (BackgroundWorker)sender;
-            var requests = (List<OrganizationRequest>)e.Argument;
-            var solutionName = string.Empty;
-            byte[] solutionFileContent = null;
-
-            foreach (var request in requests)
-            {
-                var exportRequest = request as ExportSolutionRequest;
-                if (exportRequest != null)
-                {
-                    solutionName = exportRequest.SolutionName;
-
-                    bw.ReportProgress(0, string.Format("Exporting solution {0} ...", solutionName));
-                    var exportResponse = (ExportSolutionResponse)sourceService.Execute(exportRequest);
-                    solutionFileContent = exportResponse.ExportSolutionFile;
-
-                    // continue;
-                }
-
-                foreach (var targetConnectionDetail in AdditionalConnectionDetails)
-                {
-                    lastConnectionName = targetConnectionDetail.ConnectionName;
-                    lastTargetService = targetConnectionDetail.GetCrmServiceClient();
-                    if (request is ImportSolutionRequest importRequest)
-                    {
-                        lastImportId = importRequest.ImportJobId;
-
-                        bw.ReportProgress(0, string.Format("Importing solution {0} to {1}...", solutionName, targetConnectionDetail.ConnectionName));
-                        importRequest.CustomizationFile = solutionFileContent;
-                        lastTargetService.Execute(importRequest);
-                    }
-
-                    if (request is PublishAllXmlRequest publishRequest)
-                    {
-                        bw.ReportProgress(0, string.Format("Publishing {0} to {1}...", solutionName, targetConnectionDetail.ConnectionName));
-                        lastTargetService.Execute(publishRequest);
-                    }
-                }
-            }
-        }
-
-        #endregion Methods
-
-        private void ChkExportAsManagedCheckedChanged(object sender, EventArgs e)
-        {
-            chkOverwriteUnmanagedCustomizations.Enabled = chkExportAsManaged.Checked;
-        }
-
-        private void lstSourceSolutions_ColumnClick(object sender, ColumnClickEventArgs e)
-        {
-            if (e.Column == currentsColumnOrder)
-            {
-                lstSourceSolutions.Sorting = lstSourceSolutions.Sorting == SortOrder.Ascending ? SortOrder.Descending : SortOrder.Ascending;
-
-                lstSourceSolutions.ListViewItemSorter = new ListViewItemComparer(e.Column, lstSourceSolutions.Sorting);
-            }
-            else
-            {
-                currentsColumnOrder = e.Column;
-                lstSourceSolutions.ListViewItemSorter = new ListViewItemComparer(e.Column, SortOrder.Ascending);
-            }
-        }
-
-        private void lstSourceSolutions_KeyDown(Object sender, KeyEventArgs e)
-        {
-            if (e.KeyCode == Keys.Enter && lstSourceSolutions.SelectedItems.Count > 0)
-            {
-                Process.Start(solutionUrlBase + $"/tools/solution/edit.aspx?id={lstSourceSolutions.SelectedItems[0].Tag}");
-            }
-        }
-
-        private void lstTargetEnvironments_KeyDown(Object sender, KeyEventArgs e)
-        {
-            if (lstTargetEnvironments.SelectedItems.Count > 0 && e.KeyCode == Keys.Delete)
-            {
-                foreach (ListViewItem item in lstTargetEnvironments.Items)
-                {
-                    if (item.Selected)
-                    {
-                        lstTargetEnvironments.Items.Remove(item);
-                        RemoveAdditionalOrganization((ConnectionDetail)item.Tag);
-                    }
-                }
-            }
-        }
-
-        private void ToggleWaitMode(bool on)
-        {
-            if (on)
-            {
-                Cursor = Cursors.WaitCursor;
-                btnAddTarget.Enabled = false;
-                tsbTransfertSolution.Enabled = false;
-                tsbLoadSolutions.Enabled = false;
-                tsbDownloadLogFile.Enabled = false;
-                tsbFindMissingDependencies.Enabled = false;
-            }
-            else
-            {
-                btnAddTarget.Enabled = true;
-                tsbTransfertSolution.Enabled = true;
-                tsbLoadSolutions.Enabled = true;
-                tsbDownloadLogFile.Enabled = true;
-                tsbFindMissingDependencies.Enabled = true;
-
-                Cursor = Cursors.Default;
-            }
+            DownloadLogFile(e.ImportJobId);
         }
 
         private void tsbFindMissingDependencies_Click(object sender, EventArgs e)
@@ -406,120 +156,372 @@ Would you like to open the file now ({args.Result})?
             sourceDetail = AdditionalConnectionDetails.FirstOrDefault();
             ConnectionDetail = AdditionalConnectionDetails.FirstOrDefault();
             AdditionalConnectionDetails.Clear();
-            lstTargetEnvironments.Clear();
 
             if (tempDetail != null)
             {
                 AdditionalConnectionDetails.Add(tempDetail);
             }
 
+            mForm.SwitchSourceAndTarget(tempDetail, sourceDetail);
+
             if (sourceDetail != null)
             {
                 sourceService = sourceDetail.GetCrmServiceClient();
-                solutionUrlBase = sourceDetail.WebApplicationUrl;
-                SetConnectionLabel(sourceDetail, "Source");
                 base.UpdateConnection(sourceService, sourceDetail, "", null);
                 RetrieveSolutions();
-            }
-            else
-            {
-                lblSource.Text = @"Not selected yet";
-                lblSource.ForeColor = Color.Red;
-                lstSourceSolutions.Items.Clear();
             }
         }
 
         private void TsbTransfertSolutionClick(object sender, EventArgs e)
         {
-            if (lstSourceSolutions.SelectedItems.Count > 0 && AdditionalConnectionDetails.Any())
+            if (mForm.SelectedSolutions.Count == 0 || !AdditionalConnectionDetails.Any())
             {
-                var item = lstSourceSolutions.SelectedItems[0];
+                MessageBox.Show(@"You have to select a source solution and a target organization to continue.", @"Warning",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
 
-                var solutionsToTransfer = new List<string>();
-                if (lstSourceSolutions.SelectedItems.Count > 1)
+            var solutionsToTransfer = PreparareSolutionsToTransfer();
+            if (solutionsToTransfer.Count == 0)
+            {
+                return;
+            }
+
+            var requests = new List<OrganizationRequest>();
+            progressItems = new Dictionary<OrganizationRequest, ProgressItem>();
+
+            foreach (var solution in solutionsToTransfer)
+            {
+                PrepareExportRequest(solution, requests);
+
+                foreach (var detail in AdditionalConnectionDetails)
                 {
-                    // Open dialog to order solutions import
-                    foreach (ListViewItem sourceItem in lstSourceSolutions.SelectedItems)
+                    PrepareImportRequest(detail, solution, requests);
+                }
+            }
+
+            if (!Settings.Instance.Managed && Settings.Instance.Publish)
+            {
+                foreach (var detail in AdditionalConnectionDetails)
+                {
+                    PreparePublishRequest(detail, requests);
+                }
+            }
+
+            // Add items to progress form
+            pForm.Items = progressItems.Values.ToList();
+            pForm.Start();
+
+            pForm.Show(dpMain, DockState.DockRight);
+
+            ToggleWaitMode(true);
+
+            WorkAsync(new WorkAsyncInfo
+            {
+                AsyncArgument = requests,
+                Work = (bw, evt) =>
+                {
+                    var requestsList = (List<OrganizationRequest>)evt.Argument;
+                    var solutionName = string.Empty;
+                    byte[] solutionFileContent = null;
+
+                    if (sourceService is OrganizationServiceProxy proxy)
                     {
-                        solutionsToTransfer.Add(sourceItem.Text);
+                        proxy.Timeout = Settings.Instance.Timeout;
+                    }
+                    else if (sourceService is OrganizationWebProxyClient client)
+                    {
+                        client.InnerChannel.OperationTimeout = Settings.Instance.Timeout;
                     }
 
-                    var dialog = new SolutionOrderDialog(solutionsToTransfer);
-                    if (dialog.ShowDialog(ParentForm) == DialogResult.OK)
+                    foreach (var request in requestsList)
                     {
-                        solutionsToTransfer = dialog.Solutions;
+                        currentRequest = request;
+                        if (request is ExportSolutionRequest exportRequest)
+                        {
+                            solutionName = exportRequest.SolutionName;
+
+                            progressItems[currentRequest].Solution = solutionName;
+                            progressItems[currentRequest].Start();
+
+                            var exportResponse = (ExportSolutionResponse)sourceService.Execute(exportRequest);
+                            solutionFileContent = exportResponse.ExportSolutionFile;
+
+                            progressItems[currentRequest].Success();
+                        }
+                        else if (request is ImportSolutionRequest isr)
+                        {
+                            var progressItem = progressItems[request];
+                            progressItem.Solution = solutionName;
+                            progressItem.Start();
+
+                            lastConnectionName = progressItem.Detail.ConnectionName;
+                            lastTargetService = progressItem.Detail.GetCrmServiceClient();
+
+                            if (((CrmServiceClient)lastTargetService).OrganizationServiceProxy != null)
+                            {
+                                ((CrmServiceClient)lastTargetService).OrganizationServiceProxy.Timeout = Settings.Instance.Timeout;
+                            }
+                            else if (((CrmServiceClient)lastTargetService).OrganizationWebProxyClient != null)
+                            {
+                                ((CrmServiceClient)lastTargetService).OrganizationWebProxyClient.InnerChannel.OperationTimeout = Settings.Instance.Timeout;
+                            }
+
+                            lastImportId = isr.ImportJobId;
+
+                            isr.CustomizationFile = solutionFileContent;
+                            lastTargetService.Execute(isr);
+
+                            progressItem.Success();
+                        }
+                        else if (request is PublishAllXmlRequest publishRequest)
+                        {
+                            var progressItem = progressItems[request];
+                            progressItem.Start();
+
+                            lastTargetService = progressItem.Detail.GetCrmServiceClient();
+                            lastTargetService.Execute(publishRequest);
+
+                            progressItem.Success();
+                        }
+                    }
+                },
+                PostWorkCallBack = evt =>
+                {
+                    ToggleWaitMode(false);
+                    string message;
+
+                    if (evt.Error != null)
+                    {
+                        progressItems[currentRequest].Error();
+
+                        message = $"An error occured: {evt.Error.Message}";
+                        MessageBox.Show(message, @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        tsbFindMissingDependencies.Enabled = true;
                     }
                     else
                     {
-                        return;
+                        message = "Import finished successfully!";
+                        MessageBox.Show(message, @"Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
+                }
+            });
+        }
+
+        #endregion UI Events
+
+        #region Methods
+
+        private void DownloadLogFile(Guid importJobId)
+        {
+            var dialog = new FolderBrowserDialog();
+
+            if (!string.IsNullOrWhiteSpace(Properties.Settings.Default.LastFolderUsed))
+                dialog.SelectedPath = Properties.Settings.Default.LastFolderUsed;
+
+            if (dialog.ShowDialog() == DialogResult.OK)
+            {
+                Properties.Settings.Default.LastFolderUsed = dialog.SelectedPath;
+                Properties.Settings.Default.Save();
+
+                ToggleWaitMode(true);
+
+                WorkAsync(new WorkAsyncInfo
+                {
+                    Message = "Downloading log file",
+                    Work = (sender, e) =>
+                    {
+                        var importLogRequest = new RetrieveFormattedImportJobResultsRequest
+                        {
+                            ImportJobId = importJobId
+                        };
+                        var importLogResponse = (RetrieveFormattedImportJobResultsResponse)lastTargetService.Execute(importLogRequest);
+
+                        var filePath = $@"{dialog.SelectedPath}\{DateTime.Now:yyyy_MM_dd__HH_mm}.xml";
+                        File.WriteAllText(filePath, importLogResponse.FormattedResults);
+
+                        e.Result = filePath;
+                    },
+                    PostWorkCallBack = e =>
+                    {
+                        if (e.Error != null)
+                        {
+                            var message = string.Format("An error was encountered while downloading the log file.{0}Error:{0}{1}",
+                                Environment.NewLine, e.Error.Message);
+                            MessageBox.Show(message, @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }
+                        else
+                        {
+                            if (
+                                MessageBox.Show(
+                                    $@"Download completed!
+
+Would you like to open the file now ({e.Result})?
+
+(Microsoft Excel is required)",
+                                    @"File Download", MessageBoxButtons.YesNo, MessageBoxIcon.Information) ==
+                                DialogResult.Yes)
+                            {
+                                Process.Start("Excel.exe", e.Result.ToString());
+                            }
+                        }
+
+                        ToggleWaitMode(false);
+                    }
+                });
+            }
+        }
+
+        private List<Entity> PreparareSolutionsToTransfer()
+        {
+            var solutionsToTransfer = new List<Entity>();
+            if (mForm.SelectedSolutions.Count > 1)
+            {
+                // Open dialog to order solutions import
+                foreach (var solution in mForm.SelectedSolutions)
+                {
+                    solutionsToTransfer.Add(solution);
+                }
+
+                var dialog = new SolutionOrderDialog(solutionsToTransfer);
+                if (dialog.ShowDialog(ParentForm) == DialogResult.OK)
+                {
+                    solutionsToTransfer = dialog.Solutions;
                 }
                 else
                 {
-                    solutionsToTransfer.Add(item.Text);
-                }
-
-                infoPanel = InformationPanel.GetInformationPanel(this, "Initializing...", 340, 120);
-
-                var requests = new List<OrganizationRequest>();
-
-                foreach (var solution in solutionsToTransfer)
-                {
-                    var importId = Guid.NewGuid();
-
-                    requests.Add(new ExportSolutionRequest
-                    {
-                        Managed = chkExportAsManaged.Checked,
-                        SolutionName = solution,
-                        ExportAutoNumberingSettings = chkAutoNumering.Checked,
-                        ExportCalendarSettings = chkCalendar.Checked,
-                        ExportCustomizationSettings = chkCustomization.Checked,
-                        ExportEmailTrackingSettings = chkEmailTracking.Checked,
-                        ExportGeneralSettings = chkGeneral.Checked,
-                        ExportIsvConfig = chkIsvConfig.Checked,
-                        ExportMarketingSettings = chkMarketing.Checked,
-                        ExportOutlookSynchronizationSettings = chkOutlookSynchronization.Checked,
-                        ExportRelationshipRoles = chkRelationshipRoles.Checked,
-                        ExportSales = chkSales.Checked,
-                        ExportExternalApplications = chkExternalApplications.Checked
-                    });
-
-                    requests.Add(new ImportSolutionRequest
-                    {
-                        ConvertToManaged = chkConvertToManaged.Checked,
-                        OverwriteUnmanagedCustomizations = chkOverwriteUnmanagedCustomizations.Checked,
-                        PublishWorkflows = chkActivate.Checked,
-                        ImportJobId = importId,
-                        HoldingSolution = chkStageForUpgrade.Checked,
-                        SkipProductUpdateDependencies = chkSkipProductUpdateDependencies.Checked
-                    });
-                }
-
-                if (!chkExportAsManaged.Checked && chkPublish.Checked)
-                {
-                    requests.Add(new PublishAllXmlRequest());
-                }
-
-                tsbDownloadLogFile.Enabled = false;
-                tsbFindMissingDependencies.Enabled = false;
-                tsbLoadSolutions.Enabled = false;
-                tsbTransfertSolution.Enabled = false;
-                btnAddTarget.Enabled = false;
-                Cursor = Cursors.WaitCursor;
-
-                using (var worker = new BackgroundWorker())
-                {
-                    worker.DoWork += WorkerDoWorkExport;
-                    worker.ProgressChanged += WorkerProgressChanged;
-                    worker.RunWorkerCompleted += WorkerRunWorkerCompleted;
-                    worker.WorkerReportsProgress = true;
-                    worker.RunWorkerAsync(requests);
+                    return new List<Entity>();
                 }
             }
             else
             {
-                MessageBox.Show(@"You have to select a source solution and a target organization to continue.", @"Warning",
-                                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                solutionsToTransfer.Add(mForm.SelectedSolutions.First());
+            }
+
+            return solutionsToTransfer;
+        }
+
+        private void PrepareExportRequest(Entity solution, List<OrganizationRequest> requests)
+        {
+            var request = new ExportSolutionRequest
+            {
+                Managed = Settings.Instance.Managed,
+                SolutionName = solution.GetAttributeValue<string>("uniquename"),
+                ExportAutoNumberingSettings = Settings.Instance.ExportAutoNumberingSettings,
+                ExportCalendarSettings = Settings.Instance.ExportCalendarSettings,
+                ExportCustomizationSettings = Settings.Instance.ExportCustomizationSettings,
+                ExportEmailTrackingSettings = Settings.Instance.ExportEmailTrackingSettings,
+                ExportGeneralSettings = Settings.Instance.ExportGeneralSettings,
+                ExportIsvConfig = Settings.Instance.ExportIsvConfig,
+                ExportMarketingSettings = Settings.Instance.ExportMarketingSettings,
+                ExportOutlookSynchronizationSettings = Settings.Instance.ExportOutlookSynchronizationSettings,
+                ExportRelationshipRoles = Settings.Instance.ExportRelationshipRoles,
+                ExportSales = Settings.Instance.ExportSales
+            };
+
+            if (ConnectionDetail.OrganizationMajorVersion >= 8)
+            {
+                request.ExportExternalApplications = Settings.Instance.ExportExternalApplications;
+            }
+
+            progressItems.Add(request, new ProgressItem
+            {
+                Type = Enumerations.RequestType.Export,
+                Detail = sourceDetail,
+                Solution = solution.GetAttributeValue<string>("friendlyname"),
+                Request = request
+            });
+
+            requests.Add(request);
+        }
+
+        private void PrepareImportRequest(ConnectionDetail detail, Entity solution, List<OrganizationRequest> requests)
+        {
+            var request = new ImportSolutionRequest
+            {
+                ConvertToManaged = Settings.Instance.ConvertToManaged,
+                OverwriteUnmanagedCustomizations = Settings.Instance.OverwriteUnmanagedCustomizations,
+                PublishWorkflows = Settings.Instance.PublishWorkflows,
+                ImportJobId = Guid.NewGuid()
+            };
+
+            if (ConnectionDetail.OrganizationMajorVersion >= 8)
+            {
+                request.HoldingSolution = Settings.Instance.HoldingSolution;
+                request.SkipProductUpdateDependencies = Settings.Instance.SkipProductUpdateDependencies;
+            }
+
+            var pi = new ProgressItem
+            {
+                Type = Enumerations.RequestType.Import,
+                Detail = detail,
+                Solution = solution.GetAttributeValue<string>("friendlyname"),
+                Request = request
+            };
+            pi.LogFileRequested += Pi_LogFileRequested;
+            progressItems.Add(request, pi);
+
+            requests.Add(request);
+        }
+
+        private void PreparePublishRequest(ConnectionDetail detail, List<OrganizationRequest> requests)
+        {
+            var request = new PublishAllXmlRequest();
+            progressItems.Add(request, new ProgressItem
+            {
+                Type = Enumerations.RequestType.Publish,
+                Detail = detail,
+                Request = request
+            });
+
+            requests.Add(request);
+        }
+
+        /// <summary>
+        /// Retrieves unmanaged solutions from the source organization
+        /// </summary>
+        private void RetrieveSolutions()
+        {
+            var sourceSolutionsQuery = new QueryExpression
+            {
+                EntityName = "solution",
+                ColumnSet = new ColumnSet("publisherid", "installedon", "version", "uniquename", "friendlyname", "description"),
+                Criteria = new FilterExpression
+                {
+                    Conditions =
+                    {
+                        new ConditionExpression("ismanaged", ConditionOperator.Equal, false),
+                        new ConditionExpression("isvisible", ConditionOperator.Equal, true),
+                        new ConditionExpression("uniquename", ConditionOperator.NotEqual, "Default")
+                    }
+                }
+            };
+
+            var solutions = sourceService.RetrieveMultiple(sourceSolutionsQuery);
+
+            mForm.DisplaySolutions(solutions.Entities.ToList());
+        }
+
+        #endregion Methods
+
+        private void ToggleWaitMode(bool on)
+        {
+            if (on)
+            {
+                Cursor = Cursors.WaitCursor;
+                tsbTransfertSolution.Enabled = false;
+                tsbLoadSolutions.Enabled = false;
+                tsbFindMissingDependencies.Enabled = false;
+                tsbSwitchOrgs.Enabled = false;
+            }
+            else
+            {
+                tsbTransfertSolution.Enabled = true;
+                tsbLoadSolutions.Enabled = true;
+                tsbFindMissingDependencies.Enabled = true;
+                tsbSwitchOrgs.Enabled = true;
+
+                Cursor = Cursors.Default;
             }
         }
     }

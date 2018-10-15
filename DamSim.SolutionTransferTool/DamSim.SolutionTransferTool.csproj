@@ -126,7 +126,29 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AppCode\DownloadLogEventArgs.cs" />
+    <Compile Include="AppCode\Enumerations.cs" />
+    <Compile Include="AppCode\Settings.cs" />
     <Compile Include="AppCode\TargetOrganizations.cs" />
+    <Compile Include="AppCode\TargetOrganizationsEventArgs.cs" />
+    <Compile Include="Forms\MainForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\MainForm.Designer.cs">
+      <DependentUpon>MainForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\ProgressForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\ProgressForm.Designer.cs">
+      <DependentUpon>ProgressForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\SettingsForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\SettingsForm.Designer.cs">
+      <DependentUpon>SettingsForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="ListViewItemComparer.cs" />
     <Compile Include="MissingComponentsForm.cs">
       <SubType>Form</SubType>
@@ -135,6 +157,12 @@
       <DependentUpon>MissingComponentsForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Plugin.cs" />
+    <Compile Include="ProgressItem.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="ProgressItem.Designer.cs">
+      <DependentUpon>ProgressItem.cs</DependentUpon>
+    </Compile>
     <Compile Include="Properties\Settings.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
@@ -160,8 +188,20 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Forms\MainForm.resx">
+      <DependentUpon>MainForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\ProgressForm.resx">
+      <DependentUpon>ProgressForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\SettingsForm.resx">
+      <DependentUpon>SettingsForm.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="MissingComponentsForm.resx">
       <DependentUpon>MissingComponentsForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="ProgressItem.resx">
+      <DependentUpon>ProgressItem.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="SolutionOrderDialog.resx">
       <DependentUpon>SolutionOrderDialog.cs</DependentUpon>
@@ -185,6 +225,9 @@
   <ItemGroup>
     <None Include="Resources\arrow_switch.png" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\progressbar.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>IF NOT EXIST Storage mkdir storage
@@ -194,7 +237,7 @@ xcopy /y "$(TargetPath)" "$(TargetDir)Plugins"
   </PropertyGroup>
   <ProjectExtensions>
     <VisualStudio>
-      <UserProperties BuildVersion_ConfigurationName="Release" BuildVersion_UpdateFileVersion="True" BuildVersion_UpdateAssemblyVersion="True" BuildVersion_BuildVersioningStyle="None.YearStamp.MonthStamp.DayStamp" />
+      <UserProperties BuildVersion_BuildVersioningStyle="None.YearStamp.MonthStamp.DayStamp" BuildVersion_UpdateAssemblyVersion="True" BuildVersion_UpdateFileVersion="True" BuildVersion_ConfigurationName="Release" />
     </VisualStudio>
   </ProjectExtensions>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

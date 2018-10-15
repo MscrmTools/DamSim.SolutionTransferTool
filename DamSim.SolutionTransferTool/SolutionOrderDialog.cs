@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Xrm.Sdk;
+using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
 
@@ -6,14 +7,42 @@ namespace DamSim.SolutionTransferTool
 {
     public partial class SolutionOrderDialog : Form
     {
-        public SolutionOrderDialog(List<string> solutions)
+        public SolutionOrderDialog(List<Entity> solutions)
         {
             InitializeComponent();
 
             Solutions = solutions;
         }
 
-        public List<string> Solutions { get; private set; }
+        public List<Entity> Solutions { get; private set; }
+
+        private void btnCancel_Click(object sender, EventArgs e)
+        {
+            DialogResult = DialogResult.Cancel;
+            Close();
+        }
+
+        private void btnOk_Click(object sender, EventArgs e)
+        {
+            Solutions.Clear();
+            for (var i = 0; i < lvSolutions.Items.Count; i++)
+            {
+                Solutions.Add((Entity)lvSolutions.Items[i].Tag);
+            }
+
+            DialogResult = DialogResult.OK;
+            Close();
+        }
+
+        private void SolutionOrderDialog_Load(object sender, EventArgs e)
+        {
+            foreach (var solution in Solutions)
+            {
+                var item = new ListViewItem(solution.GetAttributeValue<string>("friendlyname")) { Tag = solution };
+
+                lvSolutions.Items.Add(item);
+            }
+        }
 
         private void tsbDown_Click(object sender, EventArgs e)
         {
@@ -35,34 +64,6 @@ namespace DamSim.SolutionTransferTool
             var item = lvSolutions.Items[currentIndex];
             lvSolutions.Items.RemoveAt(currentIndex);
             lvSolutions.Items.Insert(currentIndex - 1, item);
-        }
-
-        private void SolutionOrderDialog_Load(object sender, EventArgs e)
-        {
-            foreach(var solution in Solutions)
-            {
-                var item = new ListViewItem(solution);
-
-                lvSolutions.Items.Add(item);
-            }
-        }
-
-        private void btnOk_Click(object sender, EventArgs e)
-        {
-            Solutions.Clear();
-            for(var i=0; i< lvSolutions.Items.Count; i++)
-            {
-                Solutions.Add(lvSolutions.Items[i].Text);
-            }
-
-            DialogResult = DialogResult.OK;
-            Close();
-        }
-
-        private void btnCancel_Click(object sender, EventArgs e)
-        {
-            DialogResult = DialogResult.Cancel;
-            Close();
         }
     }
 }
