@@ -113,6 +113,19 @@ namespace DamSim.SolutionTransferTool.AppCode
         [Description("Sets whether any processes (workflows) included in the solution should be activated after they are imported")]
         public bool PublishWorkflows { get; set; } = true;
 
+        [Browsable(false)]
+        public long RefreshInterval
+        {
+            get => RefreshIntervalProp.Ticks;
+            set => RefreshIntervalProp = new TimeSpan(value);
+        }
+
+        [Category("\tGeneral Settings")]
+        [DisplayName("Refresh interval")]
+        [Description("Interval to check for progress. Interval is used to start next step of solutions import so do not put a number too high here")]
+        [XmlIgnore]
+        public TimeSpan RefreshIntervalProp { get; set; } = new TimeSpan(0, 0, 0, 10);
+
         [Category("Import Settings")]
         [DisplayName("Skip Product Update Dependencies")]
         [Description("Sets whether enforcement of dependencies related to product updates should be skipped")]

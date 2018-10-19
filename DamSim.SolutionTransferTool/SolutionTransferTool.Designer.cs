@@ -133,14 +133,14 @@ namespace DamSim.SolutionTransferTool
             this.dpMain.Size = new System.Drawing.Size(1467, 1217);
             this.dpMain.TabIndex = 1;
             // 
-            // SolutionTransferTool2
+            // SolutionTransferTool
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(11F, 24F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.Controls.Add(this.dpMain);
             this.Controls.Add(this.tsMain);
             this.Margin = new System.Windows.Forms.Padding(6);
-            this.Name = "SolutionTransferTool2";
+            this.Name = "SolutionTransferTool";
             this.Size = new System.Drawing.Size(1467, 1254);
             this.tsMain.ResumeLayout(false);
             this.tsMain.PerformLayout();

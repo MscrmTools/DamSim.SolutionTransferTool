@@ -36,8 +36,9 @@
             this.panel1 = new System.Windows.Forms.Panel();
             this.pbProgress = new System.Windows.Forms.PictureBox();
             this.pnlProgress = new System.Windows.Forms.Panel();
-            this.lblProgress = new System.Windows.Forms.Label();
             this.llDownloadLog = new System.Windows.Forms.LinkLabel();
+            this.lblProgress = new System.Windows.Forms.Label();
+            this.lblPercentage = new System.Windows.Forms.Label();
             this.panel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pbProgress)).BeginInit();
             this.pnlProgress.SuspendLayout();
@@ -77,6 +78,7 @@
             // 
             // panel1
             // 
+            this.panel1.Controls.Add(this.lblPercentage);
             this.panel1.Controls.Add(this.pbProgress);
             this.panel1.Dock = System.Windows.Forms.DockStyle.Left;
             this.panel1.Location = new System.Drawing.Point(0, 0);
@@ -89,7 +91,7 @@
             // 
             this.pbProgress.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.pbProgress.Image = global::DamSim.SolutionTransferTool.Properties.Resources.progressbar;
-            this.pbProgress.Location = new System.Drawing.Point(7, 26);
+            this.pbProgress.Location = new System.Drawing.Point(7, 16);
             this.pbProgress.Margin = new System.Windows.Forms.Padding(6);
             this.pbProgress.Name = "pbProgress";
             this.pbProgress.Size = new System.Drawing.Size(59, 59);
@@ -107,6 +109,19 @@
             this.pnlProgress.Size = new System.Drawing.Size(730, 37);
             this.pnlProgress.TabIndex = 7;
             // 
+            // llDownloadLog
+            // 
+            this.llDownloadLog.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.llDownloadLog.AutoSize = true;
+            this.llDownloadLog.Location = new System.Drawing.Point(571, 8);
+            this.llDownloadLog.Name = "llDownloadLog";
+            this.llDownloadLog.Size = new System.Drawing.Size(159, 25);
+            this.llDownloadLog.TabIndex = 8;
+            this.llDownloadLog.TabStop = true;
+            this.llDownloadLog.Text = "Download log file";
+            this.llDownloadLog.Visible = false;
+            this.llDownloadLog.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.llDownloadLog_LinkClicked);
+            // 
             // lblProgress
             // 
             this.lblProgress.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -121,18 +136,18 @@
             this.lblProgress.Text = "Progress : 15% (Started at 04/10/2018 12:13:45)";
             this.lblProgress.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
-            // llDownloadLog
+            // lblPercentage
             // 
-            this.llDownloadLog.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.llDownloadLog.AutoSize = true;
-            this.llDownloadLog.Location = new System.Drawing.Point(571, 8);
-            this.llDownloadLog.Name = "llDownloadLog";
-            this.llDownloadLog.Size = new System.Drawing.Size(159, 25);
-            this.llDownloadLog.TabIndex = 8;
-            this.llDownloadLog.TabStop = true;
-            this.llDownloadLog.Text = "Download log file";
-            this.llDownloadLog.Visible = false;
-            this.llDownloadLog.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.llDownloadLog_LinkClicked);
+            this.lblPercentage.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.lblPercentage.Font = new System.Drawing.Font("Segoe UI Light", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblPercentage.Location = new System.Drawing.Point(0, 85);
+            this.lblPercentage.Margin = new System.Windows.Forms.Padding(3, 0, 0, 0);
+            this.lblPercentage.Name = "lblPercentage";
+            this.lblPercentage.Size = new System.Drawing.Size(73, 33);
+            this.lblPercentage.TabIndex = 8;
+            this.lblPercentage.Text = "0 %";
+            this.lblPercentage.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
+            this.lblPercentage.Visible = false;
             // 
             // ProgressItem
             // 
@@ -164,5 +179,6 @@
         private System.Windows.Forms.Panel pnlProgress;
         private System.Windows.Forms.Label lblProgress;
         private System.Windows.Forms.LinkLabel llDownloadLog;
+        private System.Windows.Forms.Label lblPercentage;
     }
 }

@@ -4,9 +4,9 @@ using McTools.Xrm.Connection;
 using Microsoft.Crm.Sdk.Messages;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Client;
+using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Query;
 using Microsoft.Xrm.Sdk.WebServiceClient;
-using Microsoft.Xrm.Tooling.Connector;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
@@ -33,6 +33,9 @@ namespace DamSim.SolutionTransferTool
         private Dictionary<OrganizationRequest, ProgressItem> progressItems;
         private ConnectionDetail sourceDetail;
         private IOrganizationService sourceService;
+
+        private System.Timers.Timer timer = new System.Timers.Timer();
+        private List<BaseToProcess> toProcessList = new List<BaseToProcess>();
 
         #endregion Variables
 
@@ -126,7 +129,7 @@ namespace DamSim.SolutionTransferTool
 
         private void Pi_LogFileRequested(object sender, DownloadLogEventArgs e)
         {
-            DownloadLogFile(e.ImportJobId);
+            DownloadLogFile(e.ImportJobId, e.Service);
         }
 
         private void tsbFindMissingDependencies_Click(object sender, EventArgs e)
@@ -189,14 +192,29 @@ namespace DamSim.SolutionTransferTool
 
             var requests = new List<OrganizationRequest>();
             progressItems = new Dictionary<OrganizationRequest, ProgressItem>();
+            toProcessList = new List<BaseToProcess>();
 
             foreach (var solution in solutionsToTransfer)
             {
-                PrepareExportRequest(solution, requests);
+                var exportItem = new ExportToProcess
+                {
+                    Solution = solution,
+                    Previous = toProcessList.OfType<ExportToProcess>().LastOrDefault(),
+                    Request = PrepareExportRequest(solution),
+                    Detail = sourceDetail
+                };
+                toProcessList.Add(exportItem);
 
                 foreach (var detail in AdditionalConnectionDetails)
                 {
-                    PrepareImportRequest(detail, solution, requests);
+                    toProcessList.Add(new ImportToProcess
+                    {
+                        Solution = solution,
+                        Previous = toProcessList.OfType<ImportToProcess>().LastOrDefault(x => x.Detail == detail),
+                        Export = exportItem,
+                        Request = PrepareImportRequest(detail, solution),
+                        Detail = detail
+                    });
                 }
             }
 
@@ -204,7 +222,11 @@ namespace DamSim.SolutionTransferTool
             {
                 foreach (var detail in AdditionalConnectionDetails)
                 {
-                    PreparePublishRequest(detail, requests);
+                    toProcessList.Add(new PublishToProcess
+                    {
+                        Request = PreparePublishRequest(detail),
+                        Detail = detail
+                    });
                 }
             }
 
@@ -216,103 +238,18 @@ namespace DamSim.SolutionTransferTool
 
             ToggleWaitMode(true);
 
-            WorkAsync(new WorkAsyncInfo
-            {
-                AsyncArgument = requests,
-                Work = (bw, evt) =>
-                {
-                    var requestsList = (List<OrganizationRequest>)evt.Argument;
-                    var solutionName = string.Empty;
-                    byte[] solutionFileContent = null;
+            StartExport(toProcessList.OfType<ExportToProcess>().First());
 
-                    if (sourceService is OrganizationServiceProxy proxy)
-                    {
-                        proxy.Timeout = Settings.Instance.Timeout;
-                    }
-                    else if (sourceService is OrganizationWebProxyClient client)
-                    {
-                        client.InnerChannel.OperationTimeout = Settings.Instance.Timeout;
-                    }
-
-                    foreach (var request in requestsList)
-                    {
-                        currentRequest = request;
-                        if (request is ExportSolutionRequest exportRequest)
-                        {
-                            solutionName = exportRequest.SolutionName;
-
-                            progressItems[currentRequest].Solution = solutionName;
-                            progressItems[currentRequest].Start();
-
-                            var exportResponse = (ExportSolutionResponse)sourceService.Execute(exportRequest);
-                            solutionFileContent = exportResponse.ExportSolutionFile;
-
-                            progressItems[currentRequest].Success();
-                        }
-                        else if (request is ImportSolutionRequest isr)
-                        {
-                            var progressItem = progressItems[request];
-                            progressItem.Solution = solutionName;
-                            progressItem.Start();
-
-                            lastConnectionName = progressItem.Detail.ConnectionName;
-                            lastTargetService = progressItem.Detail.GetCrmServiceClient();
-
-                            if (((CrmServiceClient)lastTargetService).OrganizationServiceProxy != null)
-                            {
-                                ((CrmServiceClient)lastTargetService).OrganizationServiceProxy.Timeout = Settings.Instance.Timeout;
-                            }
-                            else if (((CrmServiceClient)lastTargetService).OrganizationWebProxyClient != null)
-                            {
-                                ((CrmServiceClient)lastTargetService).OrganizationWebProxyClient.InnerChannel.OperationTimeout = Settings.Instance.Timeout;
-                            }
-
-                            lastImportId = isr.ImportJobId;
-
-                            isr.CustomizationFile = solutionFileContent;
-                            lastTargetService.Execute(isr);
-
-                            progressItem.Success();
-                        }
-                        else if (request is PublishAllXmlRequest publishRequest)
-                        {
-                            var progressItem = progressItems[request];
-                            progressItem.Start();
-
-                            lastTargetService = progressItem.Detail.GetCrmServiceClient();
-                            lastTargetService.Execute(publishRequest);
-
-                            progressItem.Success();
-                        }
-                    }
-                },
-                PostWorkCallBack = evt =>
-                {
-                    ToggleWaitMode(false);
-                    string message;
-
-                    if (evt.Error != null)
-                    {
-                        progressItems[currentRequest].Error();
-
-                        message = $"An error occured: {evt.Error.Message}";
-                        MessageBox.Show(message, @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        tsbFindMissingDependencies.Enabled = true;
-                    }
-                    else
-                    {
-                        message = "Import finished successfully!";
-                        MessageBox.Show(message, @"Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    }
-                }
-            });
+            timer.Elapsed += Timer_Elapsed;
+            timer.Interval = Settings.Instance.RefreshIntervalProp.TotalMilliseconds;
+            timer.Start();
         }
 
         #endregion UI Events
 
         #region Methods
 
-        private void DownloadLogFile(Guid importJobId)
+        private void DownloadLogFile(Guid importJobId, IOrganizationService service)
         {
             var dialog = new FolderBrowserDialog();
 
@@ -335,7 +272,7 @@ namespace DamSim.SolutionTransferTool
                         {
                             ImportJobId = importJobId
                         };
-                        var importLogResponse = (RetrieveFormattedImportJobResultsResponse)lastTargetService.Execute(importLogRequest);
+                        var importLogResponse = (RetrieveFormattedImportJobResultsResponse)service.Execute(importLogRequest);
 
                         var filePath = $@"{dialog.SelectedPath}\{DateTime.Now:yyyy_MM_dd__HH_mm}.xml";
                         File.WriteAllText(filePath, importLogResponse.FormattedResults);
@@ -401,7 +338,7 @@ Would you like to open the file now ({e.Result})?
             return solutionsToTransfer;
         }
 
-        private void PrepareExportRequest(Entity solution, List<OrganizationRequest> requests)
+        private ExportSolutionRequest PrepareExportRequest(Entity solution)
         {
             var request = new ExportSolutionRequest
             {
@@ -432,10 +369,10 @@ Would you like to open the file now ({e.Result})?
                 Request = request
             });
 
-            requests.Add(request);
+            return request;
         }
 
-        private void PrepareImportRequest(ConnectionDetail detail, Entity solution, List<OrganizationRequest> requests)
+        private ImportSolutionRequest PrepareImportRequest(ConnectionDetail detail, Entity solution)
         {
             var request = new ImportSolutionRequest
             {
@@ -461,10 +398,10 @@ Would you like to open the file now ({e.Result})?
             pi.LogFileRequested += Pi_LogFileRequested;
             progressItems.Add(request, pi);
 
-            requests.Add(request);
+            return request;
         }
 
-        private void PreparePublishRequest(ConnectionDetail detail, List<OrganizationRequest> requests)
+        private PublishAllXmlRequest PreparePublishRequest(ConnectionDetail detail)
         {
             var request = new PublishAllXmlRequest();
             progressItems.Add(request, new ProgressItem
@@ -474,7 +411,7 @@ Would you like to open the file now ({e.Result})?
                 Request = request
             });
 
-            requests.Add(request);
+            return request;
         }
 
         /// <summary>
@@ -502,27 +439,176 @@ Would you like to open the file now ({e.Result})?
             mForm.DisplaySolutions(solutions.Entities.ToList());
         }
 
+        private void StartExport(ExportToProcess etp)
+        {
+            progressItems[etp.Request].Solution = etp.Solution.GetAttributeValue<string>("friendlyname");
+            progressItems[etp.Request].Start();
+
+            WorkAsync(new WorkAsyncInfo
+            {
+                Message = "",
+                Work = (bw, evt) =>
+                {
+                    etp.IsProcessing = true;
+                    etp.SolutionContent = ((ExportSolutionResponse)etp.Detail.GetCrmServiceClient().Execute(etp.Request))
+                        .ExportSolutionFile;
+                },
+                PostWorkCallBack = evt =>
+                {
+                    etp.IsProcessed = true;
+                    etp.IsProcessing = false;
+
+                    if (evt.Error != null)
+                        progressItems[etp.Request].Error(DateTime.Now);
+                    else
+                        progressItems[etp.Request].Success(DateTime.Now);
+                }
+            });
+        }
+
+        private void Timer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
+        {
+            foreach (var etp in toProcessList.OfType<ExportToProcess>())
+            {
+                if (etp.IsProcessed == false && etp.IsProcessing == false)
+                {
+                    StartExport(etp);
+                }
+
+                foreach (var itp in toProcessList.OfType<ImportToProcess>()
+                    .Where(i => i.Export == etp && i.Export.IsProcessed))
+                {
+                    if (itp.Previous != null && itp.Previous.IsProcessed == false || itp.IsProcessed)
+                    {
+                        continue;
+                    }
+
+                    if (itp.IsProcessing == false && itp.IsProcessed == false)
+                    {
+                        progressItems[itp.Request].Solution = itp.Solution.GetAttributeValue<string>("friendlyname");
+                        progressItems[itp.Request].Start();
+
+                        ((ImportSolutionRequest)itp.Request).CustomizationFile = itp.Export.SolutionContent;
+
+                        itp.AsyncOperationId = ((ExecuteAsyncResponse)itp.Detail.GetCrmServiceClient().Execute(new ExecuteAsyncRequest
+                        {
+                            Request = itp.Request
+                        })).AsyncJobId;
+                        itp.IsProcessing = true;
+                    }
+                    else if (itp.IsProcessing)
+                    {
+                        var task = itp.Detail.GetCrmServiceClient().RetrieveMultiple(new QueryExpression("asyncoperation")
+                        {
+                            NoLock = true,
+                            ColumnSet = new ColumnSet(true),
+                            Criteria =
+                                {
+                                    Conditions=
+                                    {
+                                        new ConditionExpression("asyncoperationid", ConditionOperator.Equal, itp.AsyncOperationId)
+                                    }
+                                }
+                        }).Entities.FirstOrDefault();
+
+                        if (task != null)
+                        {
+                            if (task.GetAttributeValue<OptionSetValue>("statecode")?.Value == 3)
+                            {
+                                itp.IsProcessed = true;
+                                itp.IsProcessing = false;
+                                if (task.GetAttributeValue<OptionSetValue>("statuscode")?.Value == 30)
+                                {
+                                    progressItems[itp.Request].Success(task.GetAttributeValue<DateTime>("completedon").ToLocalTime());
+                                }
+                                else
+                                {
+                                    progressItems[itp.Request].Error(task.GetAttributeValue<DateTime>("completedon").ToLocalTime());
+                                }
+
+                                if (toProcessList.All(tp => tp.IsProcessed))
+                                {
+                                    ToggleWaitMode(false);
+                                }
+                            }
+                            else
+                            {
+                                var job = itp.Detail.GetCrmServiceClient().RetrieveMultiple(new QueryExpression("importjob")
+                                {
+                                    NoLock = true,
+                                    ColumnSet = new ColumnSet(true),
+                                    Criteria =
+                                    {
+                                        Conditions=
+                                        {
+                                            new ConditionExpression("importjobid", ConditionOperator.Equal, ((ImportSolutionRequest)itp.Request).ImportJobId)
+                                        }
+                                    }
+                                }).Entities.FirstOrDefault();
+
+                                if (job != null)
+                                {
+                                    progressItems[itp.Request]
+                                        .ReportProgress(job.GetAttributeValue<double>("progress"));
+                                }
+                            }
+                        }
+                    }
+                }
+
+                foreach (var ptp in toProcessList.OfType<PublishToProcess>())
+                {
+                    if (toProcessList.OfType<ImportToProcess>()
+                        .Where(i => i.Detail == ptp.Detail)
+                        .All(i => i.IsProcessed))
+                    {
+                        progressItems[ptp.Request].Start();
+
+                        WorkAsync(new WorkAsyncInfo
+                        {
+                            Message = "",
+                            Work = (bw, evt) =>
+                            {
+                                ptp.IsProcessing = true;
+                                ptp.Detail.GetCrmServiceClient().Execute(ptp.Request);
+                            },
+                            PostWorkCallBack = evt =>
+                            {
+                                ptp.IsProcessed = true;
+                                ptp.IsProcessing = false;
+
+                                if (evt.Error != null)
+                                    progressItems[ptp.Request].Error(DateTime.Now);
+                                else
+                                    progressItems[ptp.Request].Success(DateTime.Now);
+                            }
+                        });
+                    }
+                }
+            }
+        }
+
         #endregion Methods
 
         private void ToggleWaitMode(bool on)
         {
-            if (on)
+            Invoke(new Action(() =>
             {
-                Cursor = Cursors.WaitCursor;
-                tsbTransfertSolution.Enabled = false;
-                tsbLoadSolutions.Enabled = false;
-                tsbFindMissingDependencies.Enabled = false;
-                tsbSwitchOrgs.Enabled = false;
-            }
-            else
-            {
-                tsbTransfertSolution.Enabled = true;
-                tsbLoadSolutions.Enabled = true;
-                tsbFindMissingDependencies.Enabled = true;
-                tsbSwitchOrgs.Enabled = true;
-
-                Cursor = Cursors.Default;
-            }
+                if (on)
+                {
+                    tsbTransfertSolution.Enabled = false;
+                    tsbLoadSolutions.Enabled = false;
+                    tsbFindMissingDependencies.Enabled = false;
+                    tsbSwitchOrgs.Enabled = false;
+                }
+                else
+                {
+                    tsbTransfertSolution.Enabled = true;
+                    tsbLoadSolutions.Enabled = true;
+                    tsbFindMissingDependencies.Enabled = true;
+                    tsbSwitchOrgs.Enabled = true;
+                }
+            }));
         }
     }
 }

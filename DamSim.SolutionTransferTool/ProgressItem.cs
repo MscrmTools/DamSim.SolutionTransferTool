@@ -24,12 +24,13 @@ namespace DamSim.SolutionTransferTool
         public string Solution { get; set; }
         public Enumerations.RequestType Type { get; set; }
 
-        public void Error()
+        public void Error(DateTime date)
         {
             Invoke(new Action(() =>
             {
                 pbProgress.Image = ilProgress.Images[2];
                 llDownloadLog.Visible = Request is ImportSolutionRequest;
+                lblProgress.Text += $@" - {date:HH:mm:ss}";
             }));
         }
 
@@ -40,22 +41,37 @@ namespace DamSim.SolutionTransferTool
                 pnlProgress.Visible = true;
                 lblProgress.Text = string.Format(lblProgress.Tag.ToString(), DateTime.Now.ToString("G"));
                 pbProgress.Image = ilProgress.Images[1];
+                lblPercentage.Visible = Request is ImportSolutionRequest;
             }));
         }
 
-        public void Success()
+        public void Success(DateTime date)
         {
             Invoke(new Action(() =>
             {
                 pbProgress.Image = ilProgress.Images[3];
                 llDownloadLog.Visible = Request is ImportSolutionRequest;
+                lblProgress.Text += $@" - {date:HH:mm:ss}";
+                lblPercentage.Visible = false;
+            }));
+        }
+
+        internal void ReportProgress(double v)
+        {
+            Invoke(new Action(() =>
+            {
+                lblPercentage.Text = $@"{v:N0} %";
             }));
         }
 
         private void llDownloadLog_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
             if (Request is ImportSolutionRequest isr)
-                LogFileRequested?.Invoke(this, new DownloadLogEventArgs { ImportJobId = isr.ImportJobId });
+                LogFileRequested?.Invoke(this, new DownloadLogEventArgs
+                {
+                    ImportJobId = isr.ImportJobId,
+                    Service = Detail.GetCrmServiceClient()
+                });
         }
 
         private void ProgressItem_Load(object sender, EventArgs e)
