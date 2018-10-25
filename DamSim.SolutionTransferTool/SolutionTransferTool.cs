@@ -524,10 +524,13 @@ Would you like to open the file now ({e.Result})?
                                 else
                                 {
                                     progressItems[itp.Request].Error(task.GetAttributeValue<DateTime>("completedon").ToLocalTime());
+                                    ToggleWaitMode(false);
+                                    timer.Stop();
                                 }
 
                                 if (toProcessList.All(tp => tp.IsProcessed))
                                 {
+                                    timer.Stop();
                                     ToggleWaitMode(false);
                                 }
                             }
@@ -559,8 +562,9 @@ Would you like to open the file now ({e.Result})?
                 foreach (var ptp in toProcessList.OfType<PublishToProcess>())
                 {
                     if (toProcessList.OfType<ImportToProcess>()
-                        .Where(i => i.Detail == ptp.Detail)
-                        .All(i => i.IsProcessed))
+                            .Where(i => i.Detail == ptp.Detail)
+                            .All(i => i.IsProcessed)
+                        && ptp.IsProcessed == false)
                     {
                         progressItems[ptp.Request].Start();
 
@@ -571,16 +575,21 @@ Would you like to open the file now ({e.Result})?
                             {
                                 ptp.IsProcessing = true;
                                 ptp.Detail.GetCrmServiceClient().Execute(ptp.Request);
+                                ptp.IsProcessed = true;
+                                ptp.IsProcessing = false;
                             },
                             PostWorkCallBack = evt =>
                             {
-                                ptp.IsProcessed = true;
-                                ptp.IsProcessing = false;
-
                                 if (evt.Error != null)
                                     progressItems[ptp.Request].Error(DateTime.Now);
                                 else
                                     progressItems[ptp.Request].Success(DateTime.Now);
+
+                                if (toProcessList.All(tp => tp.IsProcessed))
+                                {
+                                    timer.Stop();
+                                    ToggleWaitMode(false);
+                                }
                             }
                         });
                     }
