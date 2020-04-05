@@ -34,11 +34,11 @@
             this.lblDirection = new System.Windows.Forms.Label();
             this.ilProgress = new System.Windows.Forms.ImageList(this.components);
             this.panel1 = new System.Windows.Forms.Panel();
+            this.lblPercentage = new System.Windows.Forms.Label();
             this.pbProgress = new System.Windows.Forms.PictureBox();
             this.pnlProgress = new System.Windows.Forms.Panel();
             this.llDownloadLog = new System.Windows.Forms.LinkLabel();
             this.lblProgress = new System.Windows.Forms.Label();
-            this.lblPercentage = new System.Windows.Forms.Label();
             this.panel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pbProgress)).BeginInit();
             this.pnlProgress.SuspendLayout();
@@ -48,10 +48,10 @@
             // 
             this.lblAction.AutoSize = true;
             this.lblAction.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblAction.Location = new System.Drawing.Point(77, 7);
-            this.lblAction.Margin = new System.Windows.Forms.Padding(6, 0, 6, 0);
+            this.lblAction.Location = new System.Drawing.Point(84, 7);
+            this.lblAction.Margin = new System.Windows.Forms.Padding(7, 0, 7, 0);
             this.lblAction.Name = "lblAction";
-            this.lblAction.Size = new System.Drawing.Size(235, 32);
+            this.lblAction.Size = new System.Drawing.Size(264, 37);
             this.lblAction.TabIndex = 1;
             this.lblAction.Tag = "Importing Solution {0}";
             this.lblAction.Text = "Importing Solution";
@@ -60,10 +60,10 @@
             // 
             this.lblDirection.AutoSize = true;
             this.lblDirection.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Italic, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblDirection.Location = new System.Drawing.Point(77, 42);
-            this.lblDirection.Margin = new System.Windows.Forms.Padding(6, 0, 6, 0);
+            this.lblDirection.Location = new System.Drawing.Point(84, 44);
+            this.lblDirection.Margin = new System.Windows.Forms.Padding(7, 0, 7, 0);
             this.lblDirection.Name = "lblDirection";
-            this.lblDirection.Size = new System.Drawing.Size(332, 32);
+            this.lblDirection.Size = new System.Drawing.Size(371, 37);
             this.lblDirection.TabIndex = 2;
             this.lblDirection.Text = "To organization ITL PROD 365";
             // 
@@ -82,19 +82,32 @@
             this.panel1.Controls.Add(this.pbProgress);
             this.panel1.Dock = System.Windows.Forms.DockStyle.Left;
             this.panel1.Location = new System.Drawing.Point(0, 0);
-            this.panel1.Margin = new System.Windows.Forms.Padding(6);
+            this.panel1.Margin = new System.Windows.Forms.Padding(7, 6, 7, 6);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(73, 118);
+            this.panel1.Size = new System.Drawing.Size(80, 123);
             this.panel1.TabIndex = 6;
+            // 
+            // lblPercentage
+            // 
+            this.lblPercentage.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.lblPercentage.Font = new System.Drawing.Font("Segoe UI Light", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblPercentage.Location = new System.Drawing.Point(0, 89);
+            this.lblPercentage.Margin = new System.Windows.Forms.Padding(3, 0, 0, 0);
+            this.lblPercentage.Name = "lblPercentage";
+            this.lblPercentage.Size = new System.Drawing.Size(80, 34);
+            this.lblPercentage.TabIndex = 8;
+            this.lblPercentage.Text = "0 %";
+            this.lblPercentage.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
+            this.lblPercentage.Visible = false;
             // 
             // pbProgress
             // 
             this.pbProgress.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.pbProgress.Image = global::DamSim.SolutionTransferTool.Properties.Resources.progressbar;
-            this.pbProgress.Location = new System.Drawing.Point(7, 16);
-            this.pbProgress.Margin = new System.Windows.Forms.Padding(6);
+            this.pbProgress.Location = new System.Drawing.Point(8, 17);
+            this.pbProgress.Margin = new System.Windows.Forms.Padding(7, 6, 7, 6);
             this.pbProgress.Name = "pbProgress";
-            this.pbProgress.Size = new System.Drawing.Size(59, 59);
+            this.pbProgress.Size = new System.Drawing.Size(64, 61);
             this.pbProgress.TabIndex = 0;
             this.pbProgress.TabStop = false;
             // 
@@ -103,22 +116,22 @@
             this.pnlProgress.Controls.Add(this.llDownloadLog);
             this.pnlProgress.Controls.Add(this.lblProgress);
             this.pnlProgress.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.pnlProgress.Location = new System.Drawing.Point(73, 81);
-            this.pnlProgress.Margin = new System.Windows.Forms.Padding(6);
+            this.pnlProgress.Location = new System.Drawing.Point(80, 84);
+            this.pnlProgress.Margin = new System.Windows.Forms.Padding(7, 6, 7, 6);
             this.pnlProgress.Name = "pnlProgress";
-            this.pnlProgress.Size = new System.Drawing.Size(730, 37);
+            this.pnlProgress.Size = new System.Drawing.Size(796, 39);
             this.pnlProgress.TabIndex = 7;
             // 
             // llDownloadLog
             // 
             this.llDownloadLog.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.llDownloadLog.AutoSize = true;
-            this.llDownloadLog.Location = new System.Drawing.Point(571, 8);
+            this.llDownloadLog.Location = new System.Drawing.Point(560, 9);
             this.llDownloadLog.Name = "llDownloadLog";
-            this.llDownloadLog.Size = new System.Drawing.Size(159, 25);
+            this.llDownloadLog.Size = new System.Drawing.Size(236, 30);
             this.llDownloadLog.TabIndex = 8;
             this.llDownloadLog.TabStop = true;
             this.llDownloadLog.Text = "Download log file";
+            this.llDownloadLog.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
             this.llDownloadLog.Visible = false;
             this.llDownloadLog.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.llDownloadLog_LinkClicked);
             // 
@@ -127,44 +140,30 @@
             this.lblProgress.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lblProgress.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.lblProgress.Location = new System.Drawing.Point(0, 0);
-            this.lblProgress.Margin = new System.Windows.Forms.Padding(6, 0, 6, 0);
+            this.lblProgress.Margin = new System.Windows.Forms.Padding(7, 0, 7, 0);
             this.lblProgress.Name = "lblProgress";
-            this.lblProgress.Padding = new System.Windows.Forms.Padding(7, 0, 0, 0);
-            this.lblProgress.Size = new System.Drawing.Size(730, 37);
+            this.lblProgress.Padding = new System.Windows.Forms.Padding(8, 0, 0, 0);
+            this.lblProgress.Size = new System.Drawing.Size(796, 39);
             this.lblProgress.TabIndex = 4;
             this.lblProgress.Tag = "Started at {0}";
             this.lblProgress.Text = "Progress : 15% (Started at 04/10/2018 12:13:45)";
             this.lblProgress.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
-            // lblPercentage
-            // 
-            this.lblPercentage.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.lblPercentage.Font = new System.Drawing.Font("Segoe UI Light", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblPercentage.Location = new System.Drawing.Point(0, 85);
-            this.lblPercentage.Margin = new System.Windows.Forms.Padding(3, 0, 0, 0);
-            this.lblPercentage.Name = "lblPercentage";
-            this.lblPercentage.Size = new System.Drawing.Size(73, 33);
-            this.lblPercentage.TabIndex = 8;
-            this.lblPercentage.Text = "0 %";
-            this.lblPercentage.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
-            this.lblPercentage.Visible = false;
-            // 
             // ProgressItem
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(11F, 24F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(12F, 25F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.Controls.Add(this.pnlProgress);
             this.Controls.Add(this.panel1);
             this.Controls.Add(this.lblDirection);
             this.Controls.Add(this.lblAction);
-            this.Margin = new System.Windows.Forms.Padding(6);
+            this.Margin = new System.Windows.Forms.Padding(7, 6, 7, 6);
             this.Name = "ProgressItem";
-            this.Size = new System.Drawing.Size(803, 118);
+            this.Size = new System.Drawing.Size(876, 123);
             this.Load += new System.EventHandler(this.ProgressItem_Load);
             this.panel1.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.pbProgress)).EndInit();
             this.pnlProgress.ResumeLayout(false);
-            this.pnlProgress.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 

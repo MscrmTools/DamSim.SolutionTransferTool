@@ -444,6 +444,7 @@ Would you like to open the file now ({e.Result})?
         private void StartExport(ExportToProcess etp)
         {
             progressItems[etp.Request].Solution = etp.Solution.GetAttributeValue<string>("friendlyname");
+            progressItems[etp.Request].SolutionVersion = etp.Solution.GetAttributeValue<string>("version");
             progressItems[etp.Request].Start();
 
             WorkAsync(new WorkAsyncInfo
@@ -461,9 +462,16 @@ Would you like to open the file now ({e.Result})?
                     etp.IsProcessing = false;
 
                     if (evt.Error != null)
+                    {
                         progressItems[etp.Request].Error(DateTime.Now);
+
+                        ToggleWaitMode(false);
+                    }
                     else
+                    {
                         progressItems[etp.Request].Success(DateTime.Now);
+                        progressItems[etp.Request].SolutionFile = etp.SolutionContent;
+                    }
                 }
             });
         }
@@ -611,6 +619,7 @@ Would you like to open the file now ({e.Result})?
                     tsbLoadSolutions.Enabled = false;
                     tsbFindMissingDependencies.Enabled = false;
                     tsbSwitchOrgs.Enabled = false;
+                    tsbExportSolutions.Enabled = false;
                 }
                 else
                 {
@@ -618,8 +627,29 @@ Would you like to open the file now ({e.Result})?
                     tsbLoadSolutions.Enabled = true;
                     tsbFindMissingDependencies.Enabled = true;
                     tsbSwitchOrgs.Enabled = true;
+                    tsbExportSolutions.Enabled = toProcessList.OfType<ExportToProcess>().Any(etp =>
+                        etp.SolutionContent != null);
                 }
             }));
+        }
+
+        private void tsbExportSolutions_Click(object sender, EventArgs e)
+        {
+            var cfd = new CustomFolderBrowserDialog();
+            if (cfd.ShowDialog(Parent) == DialogResult.OK)
+            {
+                foreach (var etp in toProcessList.OfType<ExportToProcess>())
+                {
+                    if (etp.SolutionContent != null)
+                    {
+                        string filename = Path.Combine(cfd.FolderPath,
+                            $"{etp.Solution.GetAttributeValue<string>("uniquename")}_{etp.Solution.GetAttributeValue<string>("version").Replace(".", "_")}{(((ExportSolutionRequest)etp.Request).Managed ? "_managed" : "")}.zip");
+                        File.WriteAllBytes(filename, etp.SolutionContent);
+                    }
+                }
+
+                MessageBox.Show(this, $@"Solution(s) saved to {cfd.FolderPath}", @"Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
         }
     }
 }
