@@ -115,6 +115,8 @@ namespace DamSim.SolutionTransferTool
                 RetrieveSolutions();
 
                 mForm.SetSourceOrganization(detail);
+
+                base.UpdateConnection(newService, detail, actionName, parameter);
             }
         }
 
