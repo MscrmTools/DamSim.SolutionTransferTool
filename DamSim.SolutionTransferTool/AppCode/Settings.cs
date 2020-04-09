@@ -7,7 +7,7 @@ namespace DamSim.SolutionTransferTool.AppCode
 {
     public class Settings
     {
-        private static Settings instance;
+        private static Settings _instance;
 
         private Settings()
         {
@@ -18,15 +18,15 @@ namespace DamSim.SolutionTransferTool.AppCode
         {
             get
             {
-                if (instance == null)
+                if (_instance == null)
                 {
-                    if (!SettingsManager.Instance.TryLoad(typeof(SolutionTransferTool), out instance))
+                    if (!SettingsManager.Instance.TryLoad(typeof(SolutionTransferTool), out _instance))
                     {
-                        instance = new Settings();
+                        _instance = new Settings();
                     }
                 }
 
-                return instance;
+                return _instance;
             }
         }
 
@@ -131,22 +131,9 @@ namespace DamSim.SolutionTransferTool.AppCode
         [Description("Sets whether enforcement of dependencies related to product updates should be skipped")]
         public bool SkipProductUpdateDependencies { get; set; }
 
-        [Browsable(false)]
-        public long Ticks
-        {
-            get => Timeout.Ticks;
-            set => Timeout = new TimeSpan(value);
-        }
-
-        [Category("\tGeneral Settings")]
-        [DisplayName("Timeout")]
-        [Description("Timeout applied for import requests")]
-        [XmlIgnore]
-        public TimeSpan Timeout { get; set; } = new TimeSpan(0, 1, 0, 0);
-
         public void Save()
         {
-            SettingsManager.Instance.Save(typeof(SolutionTransferTool), instance);
+            SettingsManager.Instance.Save(typeof(SolutionTransferTool), _instance);
         }
     }
 }
