@@ -92,7 +92,6 @@ namespace DamSim.SolutionTransferTool
 
         public override void UpdateConnection(IOrganizationService newService, ConnectionDetail detail, string actionName, object parameter)
         {
-            ConnectionDetail = detail;
             if (actionName == "AdditionalOrganization")
             {
                 AdditionalConnectionDetails.Add(detail);
@@ -110,6 +109,7 @@ namespace DamSim.SolutionTransferTool
             }
             else
             {
+                ConnectionDetail = detail;
                 sourceDetail = detail;
                 sourceService = newService;
                 RetrieveSolutions();
