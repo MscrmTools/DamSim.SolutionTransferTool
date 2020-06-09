@@ -375,6 +375,7 @@ Would you like to open the file now ({e.Result})?
                 Type = Enumerations.RequestType.Export,
                 Detail = sourceDetail,
                 Solution = solution.GetAttributeValue<string>("friendlyname"),
+                SolutionVersion = solution.GetAttributeValue<string>("version"),
                 Request = request
             });
 
@@ -402,6 +403,7 @@ Would you like to open the file now ({e.Result})?
                 Type = Enumerations.RequestType.Import,
                 Detail = detail,
                 Solution = solution.GetAttributeValue<string>("friendlyname"),
+                SolutionVersion = solution.GetAttributeValue<string>("version"),
                 Request = request
             };
             pi.LogFileRequested += Pi_LogFileRequested;

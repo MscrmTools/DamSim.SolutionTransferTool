@@ -97,7 +97,7 @@ namespace DamSim.SolutionTransferTool
         {
             lblAction.Text = Type == Enumerations.RequestType.Publish
                 ? "Publish customizations"
-                : $@"{(Type == Enumerations.RequestType.Export ? "Export" : "Import")} Solution {Solution}";
+                : $@"{(Type == Enumerations.RequestType.Export ? "Export" : "Import")} {Solution} {SolutionVersion}";
 
             lblDirection.Text = Type == Enumerations.RequestType.Publish
                 ? $@"On organization {Detail.ConnectionName}"
