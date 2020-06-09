@@ -31,9 +31,10 @@ namespace DamSim.SolutionTransferTool
         private Guid lastImportId;
         private IOrganizationService lastTargetService;
         private Dictionary<OrganizationRequest, ProgressItem> progressItems;
+        private Settings settings;
+        private SettingsForm sForm;
         private ConnectionDetail sourceDetail;
         private IOrganizationService sourceService;
-
         private System.Timers.Timer timer = new System.Timers.Timer();
         private List<BaseToProcess> toProcessList = new List<BaseToProcess>();
 
@@ -55,7 +56,7 @@ namespace DamSim.SolutionTransferTool
             pForm = new ProgressForm();
             pForm.Show(dpMain, DockState.DockRight);
 
-            var sForm = new SettingsForm();
+            sForm = new SettingsForm();
             sForm.Show(dpMain, DockState.DockRight);
         }
 
@@ -85,7 +86,7 @@ namespace DamSim.SolutionTransferTool
 
         public override void ClosingPlugin(PluginCloseInfo info)
         {
-            Settings.Instance.Save();
+            settings.Save(ConnectionDetail?.ConnectionName);
 
             base.ClosingPlugin(info);
         }
@@ -109,11 +110,19 @@ namespace DamSim.SolutionTransferTool
             }
             else
             {
+                settings?.Save(ConnectionDetail?.ConnectionName);
+
                 ConnectionDetail = detail;
                 sourceDetail = detail;
                 sourceService = newService;
                 RetrieveSolutions();
 
+                if (!SettingsManager.Instance.TryLoad(GetType(), out settings, ConnectionDetail.ConnectionName))
+                {
+                    settings = new Settings();
+                }
+
+                sForm.Settings = settings;
                 mForm.SetSourceOrganization(detail);
 
                 base.UpdateConnection(newService, detail, actionName, parameter);
@@ -220,7 +229,7 @@ namespace DamSim.SolutionTransferTool
                 }
             }
 
-            if (!Settings.Instance.Managed && Settings.Instance.Publish)
+            if (!settings.Managed && settings.Publish)
             {
                 foreach (var detail in AdditionalConnectionDetails)
                 {
@@ -238,12 +247,10 @@ namespace DamSim.SolutionTransferTool
 
             pForm.Show(dpMain, DockState.DockRight);
 
-            ToggleWaitMode(true);
-
             StartExport(toProcessList.OfType<ExportToProcess>().First());
 
             timer.Elapsed += Timer_Elapsed;
-            timer.Interval = Settings.Instance.RefreshIntervalProp.TotalMilliseconds;
+            timer.Interval = settings.RefreshIntervalProp.TotalMilliseconds;
             timer.Start();
         }
 
@@ -344,23 +351,23 @@ Would you like to open the file now ({e.Result})?
         {
             var request = new ExportSolutionRequest
             {
-                Managed = Settings.Instance.Managed,
+                Managed = settings.Managed,
                 SolutionName = solution.GetAttributeValue<string>("uniquename"),
-                ExportAutoNumberingSettings = Settings.Instance.ExportAutoNumberingSettings,
-                ExportCalendarSettings = Settings.Instance.ExportCalendarSettings,
-                ExportCustomizationSettings = Settings.Instance.ExportCustomizationSettings,
-                ExportEmailTrackingSettings = Settings.Instance.ExportEmailTrackingSettings,
-                ExportGeneralSettings = Settings.Instance.ExportGeneralSettings,
-                ExportIsvConfig = Settings.Instance.ExportIsvConfig,
-                ExportMarketingSettings = Settings.Instance.ExportMarketingSettings,
-                ExportOutlookSynchronizationSettings = Settings.Instance.ExportOutlookSynchronizationSettings,
-                ExportRelationshipRoles = Settings.Instance.ExportRelationshipRoles,
-                ExportSales = Settings.Instance.ExportSales
+                ExportAutoNumberingSettings = settings.ExportAutoNumberingSettings,
+                ExportCalendarSettings = settings.ExportCalendarSettings,
+                ExportCustomizationSettings = settings.ExportCustomizationSettings,
+                ExportEmailTrackingSettings = settings.ExportEmailTrackingSettings,
+                ExportGeneralSettings = settings.ExportGeneralSettings,
+                ExportIsvConfig = settings.ExportIsvConfig,
+                ExportMarketingSettings = settings.ExportMarketingSettings,
+                ExportOutlookSynchronizationSettings = settings.ExportOutlookSynchronizationSettings,
+                ExportRelationshipRoles = settings.ExportRelationshipRoles,
+                ExportSales = settings.ExportSales
             };
 
             if (ConnectionDetail.OrganizationMajorVersion >= 8)
             {
-                request.ExportExternalApplications = Settings.Instance.ExportExternalApplications;
+                request.ExportExternalApplications = settings.ExportExternalApplications;
             }
 
             progressItems.Add(request, new ProgressItem
@@ -378,16 +385,16 @@ Would you like to open the file now ({e.Result})?
         {
             var request = new ImportSolutionRequest
             {
-                ConvertToManaged = Settings.Instance.ConvertToManaged,
-                OverwriteUnmanagedCustomizations = Settings.Instance.OverwriteUnmanagedCustomizations,
-                PublishWorkflows = Settings.Instance.PublishWorkflows,
+                ConvertToManaged = settings.ConvertToManaged,
+                OverwriteUnmanagedCustomizations = settings.OverwriteUnmanagedCustomizations,
+                PublishWorkflows = settings.PublishWorkflows,
                 ImportJobId = Guid.NewGuid()
             };
 
             if (ConnectionDetail.OrganizationMajorVersion >= 8)
             {
-                request.HoldingSolution = Settings.Instance.HoldingSolution;
-                request.SkipProductUpdateDependencies = Settings.Instance.SkipProductUpdateDependencies;
+                request.HoldingSolution = settings.HoldingSolution;
+                request.SkipProductUpdateDependencies = settings.SkipProductUpdateDependencies;
             }
 
             var pi = new ProgressItem
@@ -443,6 +450,22 @@ Would you like to open the file now ({e.Result})?
 
         private void StartExport(ExportToProcess etp)
         {
+            if (settings.AutoExportSolutionsToDisk)
+            {
+                if (!Directory.Exists(settings.AutoExportSolutionsFolderPath))
+                {
+                    MessageBox.Show(this,
+                        $@"Folder {settings.AutoExportSolutionsFolderPath} does not exist! Please update settings",
+                        @"Warning",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Warning);
+                    sForm.Show(dpMain, sForm.DockState);
+                    return;
+                }
+            }
+
+            ToggleWaitMode(true);
+
             progressItems[etp.Request].Solution = etp.Solution.GetAttributeValue<string>("friendlyname");
             progressItems[etp.Request].SolutionVersion = etp.Solution.GetAttributeValue<string>("version");
             progressItems[etp.Request].Start();
@@ -471,6 +494,23 @@ Would you like to open the file now ({e.Result})?
                     {
                         progressItems[etp.Request].Success(DateTime.Now);
                         progressItems[etp.Request].SolutionFile = etp.SolutionContent;
+                    }
+
+                    if (settings.AutoExportSolutionsToDisk)
+                    {
+                        var fileName =
+                            $"{progressItems[etp.Request].Solution}_{progressItems[etp.Request].SolutionVersion.Replace(".", "_")}.zip";
+                        var filePath = Path.Combine(settings.AutoExportSolutionsFolderPath, fileName);
+                        try
+                        {
+                            File.WriteAllBytes(filePath, etp.SolutionContent);
+                        }
+                        catch (Exception error)
+                        {
+                            MessageBox.Show(this, $@"Error when saving solution {fileName} to disk.
+
+{error.Message}", @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }
                     }
                 }
             });

@@ -7,28 +7,19 @@ namespace DamSim.SolutionTransferTool.AppCode
 {
     public class Settings
     {
-        private static Settings _instance;
-
-        private Settings()
+        public Settings()
         {
         }
 
-        //public static Settings Instance => instance ?? (instance = new Settings());
-        public static Settings Instance
-        {
-            get
-            {
-                if (_instance == null)
-                {
-                    if (!SettingsManager.Instance.TryLoad(typeof(SolutionTransferTool), out _instance))
-                    {
-                        _instance = new Settings();
-                    }
-                }
+        [Category("\tGeneral Settings")]
+        [DisplayName("Auto save path")]
+        [Description("Sets where solutions should be auto saved")]
+        public string AutoExportSolutionsFolderPath { get; set; }
 
-                return _instance;
-            }
-        }
+        [Category("\tGeneral Settings")]
+        [DisplayName("\tAuto save solutions")]
+        [Description("Sets wether to save exported solutions to disk")]
+        public bool AutoExportSolutionsToDisk { get; set; }
 
         [Category("Import Settings")]
         [DisplayName("Convert to managed")]
@@ -131,9 +122,9 @@ namespace DamSim.SolutionTransferTool.AppCode
         [Description("Sets whether enforcement of dependencies related to product updates should be skipped")]
         public bool SkipProductUpdateDependencies { get; set; }
 
-        public void Save()
+        public void Save(string name = null)
         {
-            SettingsManager.Instance.Save(typeof(SolutionTransferTool), _instance);
+            SettingsManager.Instance.Save(typeof(SolutionTransferTool), this, name);
         }
     }
 }

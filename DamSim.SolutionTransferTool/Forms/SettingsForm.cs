@@ -8,8 +8,11 @@ namespace DamSim.SolutionTransferTool.Forms
         public SettingsForm()
         {
             InitializeComponent();
+        }
 
-            SettingsPropertyPanel.SelectedObject = Settings.Instance;
+        public Settings Settings
+        {
+            set => SettingsPropertyPanel.SelectedObject = value;
         }
     }
 }
