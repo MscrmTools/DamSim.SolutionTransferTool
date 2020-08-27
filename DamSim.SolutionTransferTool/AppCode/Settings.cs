@@ -5,6 +5,24 @@ using XrmToolBox.Extensibility;
 
 namespace DamSim.SolutionTransferTool.AppCode
 {
+    public enum VersionType
+    {
+        [Description("Major (x.0.0.0)")]
+        Major,
+
+        [Description("Minor (0.x.0.0)")]
+        Minor,
+
+        [Description("Build (0.0.x.0)")]
+        Build,
+
+        [Description("Revision (0.0.0.x)")]
+        Revision,
+
+        //[Description("Date (yyyy.MM.dd.x)")]
+        //Date
+    }
+
     public class Settings
     {
         public Settings()
@@ -121,6 +139,22 @@ namespace DamSim.SolutionTransferTool.AppCode
         [DisplayName("Skip Product Update Dependencies")]
         [Description("Sets whether enforcement of dependencies related to product updates should be skipped")]
         public bool SkipProductUpdateDependencies { get; set; }
+
+        [Category("Solution Version")]
+        [DisplayName("Update solution version")]
+        [Description("Sets wether solution from source environement must be updated before export")]
+        public bool UpdateSourceSolutionVersion { get; set; }
+
+        //[Category("Solution Version")]
+        //[DisplayName("Date Version mask")]
+        //[Description("A mask like yyyy.MM.dd.x where x is an incremental figure")]
+        //public string VersionDateMask { get; set; }
+
+        [Category("Solution Version")]
+        [DisplayName("Version update policy")]
+        [Description("Defines which part of the solution number must be incremented")]
+        [TypeConverter(typeof(VersionTypeConverter))]
+        public VersionType VersionSchema { get; set; }
 
         public void Save(string name = null)
         {

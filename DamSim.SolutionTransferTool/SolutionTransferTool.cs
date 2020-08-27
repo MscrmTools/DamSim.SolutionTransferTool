@@ -207,6 +207,11 @@ namespace DamSim.SolutionTransferTool
 
             foreach (var solution in solutionsToTransfer)
             {
+                if (settings.UpdateSourceSolutionVersion)
+                {
+                    UpdateSolutionVersion(solution);
+                }
+
                 var exportItem = new ExportToProcess
                 {
                     Solution = solution,
@@ -647,6 +652,37 @@ Would you like to open the file now ({e.Result})?
                     }
                 }
             }
+        }
+
+        private void UpdateSolutionVersion(Entity etpSolution)
+        {
+            string version = etpSolution.GetAttributeValue<string>("version");
+            var versionParts = version.Split('.');
+            switch (settings.VersionSchema)
+            {
+                case VersionType.Major:
+                    versionParts[0] = (int.Parse(versionParts[0]) + 1).ToString();
+                    break;
+
+                case VersionType.Minor:
+                    if (versionParts.Length < 2) break;
+                    versionParts[1] = (int.Parse(versionParts[1]) + 1).ToString();
+                    break;
+
+                case VersionType.Build:
+                    if (versionParts.Length < 3) break;
+                    versionParts[2] = (int.Parse(versionParts[2]) + 1).ToString();
+                    break;
+
+                case VersionType.Revision:
+                    if (versionParts.Length < 4) break;
+                    versionParts[3] = (int.Parse(versionParts[3]) + 1).ToString();
+                    break;
+            }
+
+            etpSolution["version"] = string.Join(".", versionParts);
+
+            Service.Update(etpSolution);
         }
 
         #endregion Methods
