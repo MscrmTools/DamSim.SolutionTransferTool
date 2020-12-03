@@ -93,6 +93,15 @@ namespace DamSim.SolutionTransferTool.Forms
             SetSourceOrganization(target);
         }
 
+        public void UpdateSolutionVersion(Entity solution)
+        {
+            var item = lstSourceSolutions.Items.Cast<ListViewItem>()
+                .FirstOrDefault(x => ((Entity)x.Tag).Id == solution.Id);
+
+            if (item == null) return;
+            item.SubItems[2].Text = solution.GetAttributeValue<string>("version");
+        }
+
         private void btnAddTarget_Click(object sender, EventArgs e)
         {
             TargetOrganizationRequested?.Invoke(this, new EventArgs());

@@ -5,6 +5,18 @@ using XrmToolBox.Extensibility;
 
 namespace DamSim.SolutionTransferTool.AppCode
 {
+    public enum UpdateVersionEnum
+    {
+        [Description("No")]
+        No,
+
+        [Description("Yes")]
+        Yes,
+
+        [Description("Prompt")]
+        Prompt
+    }
+
     public enum VersionType
     {
         [Description("Major (x.0.0.0)")]
@@ -140,10 +152,14 @@ namespace DamSim.SolutionTransferTool.AppCode
         [Description("Sets whether enforcement of dependencies related to product updates should be skipped")]
         public bool SkipProductUpdateDependencies { get; set; }
 
+        [Browsable(false)]
+        [Obsolete("Replaced by UpdateSourceSolutionVersionNew")]
+        public bool UpdateSourceSolutionVersion { get; set; }
+
         [Category("Solution Version")]
         [DisplayName("Update solution version")]
         [Description("Sets wether solution from source environement must be updated before export")]
-        public bool UpdateSourceSolutionVersion { get; set; }
+        public UpdateVersionEnum UpdateSourceSolutionVersionNew { get; set; }
 
         //[Category("Solution Version")]
         //[DisplayName("Date Version mask")]
