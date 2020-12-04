@@ -10,6 +10,7 @@ namespace DamSim.SolutionTransferTool
         public bool IsProcessed { get; set; }
         public bool IsProcessing { get; set; }
         public OrganizationRequest Request { get; set; }
+        public bool Succeeded { get; set; }
     }
 
     public class ExportToProcess : ToProcess

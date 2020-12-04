@@ -54,10 +54,16 @@ namespace DamSim.SolutionTransferTool
             mForm.Show(dpMain, DockState.Document);
 
             pForm = new ProgressForm();
+            pForm.OnRetry += PForm_OnRetry;
             pForm.Show(dpMain, DockState.DockRight);
 
             sForm = new SettingsForm();
             sForm.Show(dpMain, DockState.DockRight);
+        }
+
+        private void PForm_OnRetry(object sender, EventArgs e)
+        {
+            Retry();
         }
 
         #endregion Constructor
@@ -392,50 +398,59 @@ Would you like to open the file now ({e.Result})?
             return solutionsToTransfer;
         }
 
-        private ExportSolutionRequest PrepareExportRequest(Entity solution)
+        private ExportSolutionRequest PrepareExportRequest(Entity solution, ExportSolutionRequest request = null)
         {
-            var request = new ExportSolutionRequest
+            var isNull = request == null;
+            if (isNull)
             {
-                Managed = settings.Managed,
-                SolutionName = solution.GetAttributeValue<string>("uniquename"),
-                ExportAutoNumberingSettings = settings.ExportAutoNumberingSettings,
-                ExportCalendarSettings = settings.ExportCalendarSettings,
-                ExportCustomizationSettings = settings.ExportCustomizationSettings,
-                ExportEmailTrackingSettings = settings.ExportEmailTrackingSettings,
-                ExportGeneralSettings = settings.ExportGeneralSettings,
-                ExportIsvConfig = settings.ExportIsvConfig,
-                ExportMarketingSettings = settings.ExportMarketingSettings,
-                ExportOutlookSynchronizationSettings = settings.ExportOutlookSynchronizationSettings,
-                ExportRelationshipRoles = settings.ExportRelationshipRoles,
-                ExportSales = settings.ExportSales
-            };
+                request = new ExportSolutionRequest();
+            }
+
+            request.Managed = settings.Managed;
+            request.SolutionName = solution.GetAttributeValue<string>("uniquename");
+            request.ExportAutoNumberingSettings = settings.ExportAutoNumberingSettings;
+            request.ExportCalendarSettings = settings.ExportCalendarSettings;
+            request.ExportCustomizationSettings = settings.ExportCustomizationSettings;
+            request.ExportEmailTrackingSettings = settings.ExportEmailTrackingSettings;
+            request.ExportGeneralSettings = settings.ExportGeneralSettings;
+            request.ExportIsvConfig = settings.ExportIsvConfig;
+            request.ExportMarketingSettings = settings.ExportMarketingSettings;
+            request.ExportOutlookSynchronizationSettings = settings.ExportOutlookSynchronizationSettings;
+            request.ExportRelationshipRoles = settings.ExportRelationshipRoles;
+            request.ExportSales = settings.ExportSales;
 
             if (ConnectionDetail.OrganizationMajorVersion >= 8)
             {
                 request.ExportExternalApplications = settings.ExportExternalApplications;
             }
 
-            progressItems.Add(request, new ProgressItem
+            if (isNull)
             {
-                Type = Enumerations.RequestType.Export,
-                Detail = sourceDetail,
-                Solution = solution.GetAttributeValue<string>("friendlyname"),
-                SolutionVersion = solution.GetAttributeValue<string>("version"),
-                Request = request
-            });
+                progressItems.Add(request, new ProgressItem
+                {
+                    Type = Enumerations.RequestType.Export,
+                    Detail = sourceDetail,
+                    Solution = solution.GetAttributeValue<string>("friendlyname"),
+                    SolutionVersion = solution.GetAttributeValue<string>("version"),
+                    Request = request
+                });
+            }
 
             return request;
         }
 
-        private ImportSolutionRequest PrepareImportRequest(ConnectionDetail detail, Entity solution)
+        private ImportSolutionRequest PrepareImportRequest(ConnectionDetail detail, Entity solution, ImportSolutionRequest request = null)
         {
-            var request = new ImportSolutionRequest
+            var isNull = request == null;
+            if (isNull)
             {
-                ConvertToManaged = settings.ConvertToManaged,
-                OverwriteUnmanagedCustomizations = settings.OverwriteUnmanagedCustomizations,
-                PublishWorkflows = settings.PublishWorkflows,
-                ImportJobId = Guid.NewGuid()
-            };
+                request = new ImportSolutionRequest();
+            }
+
+            request.ConvertToManaged = settings.ConvertToManaged;
+            request.OverwriteUnmanagedCustomizations = settings.OverwriteUnmanagedCustomizations;
+            request.PublishWorkflows = settings.PublishWorkflows;
+            request.ImportJobId = Guid.NewGuid();
 
             if (ConnectionDetail.OrganizationMajorVersion >= 8)
             {
@@ -443,16 +458,24 @@ Would you like to open the file now ({e.Result})?
                 request.SkipProductUpdateDependencies = settings.SkipProductUpdateDependencies;
             }
 
-            var pi = new ProgressItem
+            //if (ConnectionDetail.OrganizationMajorVersion >= 9 && ConnectionDetail.OrganizationMinorVersion >= 1)
+            //{
+            //    request.AsyncRibbonProcessing
+            //}
+
+            if (isNull)
             {
-                Type = Enumerations.RequestType.Import,
-                Detail = detail,
-                Solution = solution.GetAttributeValue<string>("friendlyname"),
-                SolutionVersion = solution.GetAttributeValue<string>("version"),
-                Request = request
-            };
-            pi.LogFileRequested += Pi_LogFileRequested;
-            progressItems.Add(request, pi);
+                var pi = new ProgressItem
+                {
+                    Type = Enumerations.RequestType.Import,
+                    Detail = detail,
+                    Solution = solution.GetAttributeValue<string>("friendlyname"),
+                    SolutionVersion = solution.GetAttributeValue<string>("version"),
+                    Request = request
+                };
+                pi.LogFileRequested += Pi_LogFileRequested;
+                progressItems.Add(request, pi);
+            }
 
             return request;
         }
@@ -530,10 +553,14 @@ Would you like to open the file now ({e.Result})?
                 {
                     etp.IsProcessed = true;
                     etp.IsProcessing = false;
+                    etp.Succeeded = true;
 
                     if (evt.Error != null)
                     {
+                        etp.Succeeded = false;
+
                         progressItems[etp.Request].Error(DateTime.Now);
+                        pForm.ShowRetryButton(progressItems[etp.Request]);
 
                         ToggleWaitMode(false);
                     }
@@ -617,12 +644,14 @@ Would you like to open the file now ({e.Result})?
                                 if (task.GetAttributeValue<OptionSetValue>("statuscode")?.Value == 30)
                                 {
                                     progressItems[itp.Request].Success(task.GetAttributeValue<DateTime>("completedon").ToLocalTime());
+                                    itp.Succeeded = true;
                                 }
                                 else
                                 {
                                     progressItems[itp.Request].Error(task.GetAttributeValue<DateTime>("completedon").ToLocalTime());
                                     ToggleWaitMode(false);
                                     timer.Stop();
+                                    pForm.ShowRetryButton(progressItems[itp.Request]);
                                 }
 
                                 if (toProcessList.All(tp => tp.IsProcessed))
@@ -695,6 +724,46 @@ Would you like to open the file now ({e.Result})?
         }
 
         #endregion Methods
+
+        private void Retry()
+        {
+            if (DialogResult.Yes != MessageBox.Show(this, @"Are you sure you want to retry last failed action?",
+                    @"Question", MessageBoxButtons.YesNo, MessageBoxIcon.Question))
+                return;
+
+            var firstNotSucceededProcess = toProcessList.FirstOrDefault(x => x.Succeeded == false);
+            if (firstNotSucceededProcess == null)
+            {
+                return;
+            }
+
+            if (firstNotSucceededProcess is ExportToProcess etp)
+            {
+                etp.IsProcessed = false;
+                StartExport(etp);
+            }
+            else if (firstNotSucceededProcess is ImportToProcess itp)
+            {
+                itp.IsProcessed = false;
+                progressItems[itp.Request].Start();
+            }
+
+            foreach (var ep in toProcessList.OfType<ExportToProcess>().Where(x => x.IsProcessed == false))
+            {
+                PrepareExportRequest(ep.Solution, (ExportSolutionRequest)ep.Request);
+            }
+
+            foreach (var ip in toProcessList.OfType<ImportToProcess>().Where(x => x.IsProcessed == false))
+            {
+                PrepareImportRequest(ip.Detail, ip.Solution, (ImportSolutionRequest)ip.Request);
+            }
+
+            ToggleWaitMode(true);
+
+            timer.Elapsed += Timer_Elapsed;
+            timer.Interval = settings.RefreshIntervalProp.TotalMilliseconds;
+            timer.Start();
+        }
 
         private void ToggleWaitMode(bool on)
         {

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Windows.Forms;
 using WeifenLuo.WinFormsUI.Docking;
 
@@ -12,7 +13,20 @@ namespace DamSim.SolutionTransferTool.Forms
             InitializeComponent();
         }
 
+        public event EventHandler OnRetry;
+
         public List<ProgressItem> Items { get; set; }
+
+        public void ShowRetryButton(ProgressItem failingItem)
+        {
+            Invoke(new Action(() =>
+            {
+                var index = pnlProgress.Controls.IndexOf(failingItem);
+                pnlProgress.Controls.Add(pnlRetry);
+                pnlProgress.Controls.SetChildIndex(pnlRetry, index);
+                pnlRetry.Visible = true;
+            }));
+        }
 
         public void Start()
         {
@@ -25,6 +39,12 @@ namespace DamSim.SolutionTransferTool.Forms
                 Items[i].Dock = DockStyle.Top;
                 pnlProgress.Controls.Add(Items[i]);
             }
+        }
+
+        private void btnRetry_Click(object sender, System.EventArgs e)
+        {
+            OnRetry?.Invoke(this, new EventArgs());
+            pnlRetry.Visible = false;
         }
     }
 }
