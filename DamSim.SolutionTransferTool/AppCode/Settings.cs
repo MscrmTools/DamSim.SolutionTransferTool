@@ -5,6 +5,18 @@ using XrmToolBox.Extensibility;
 
 namespace DamSim.SolutionTransferTool.AppCode
 {
+    public enum ImportModeEnum
+    {
+        [Description("Update")]
+        Update,
+
+        [Description("Stage for upgrade")]
+        StageForUpgrade,
+
+        [Description("Upgrade")]
+        Upgrade
+    }
+
     public enum UpdateVersionEnum
     {
         [Description("No")]
@@ -30,6 +42,9 @@ namespace DamSim.SolutionTransferTool.AppCode
 
         [Description("Revision (0.0.0.x)")]
         Revision,
+
+        [Description("Manual")]
+        Manual
 
         //[Description("Date (yyyy.MM.dd.x)")]
         //Date
@@ -114,6 +129,14 @@ namespace DamSim.SolutionTransferTool.AppCode
         [Category("Import Settings")]
         [DisplayName("Stage for Upgrade")]
         public bool HoldingSolution { get; set; }
+
+        [Category("Import Settings")]
+        [DisplayName("Import Mode")]
+        [Description(@"Update: Updates solution components but does not remove any
+Stage for upgrade: Install a new version of the solution and keep the old one
+Upgrade: Install a new version of the solution and remove missing components")]
+        [TypeConverter(typeof(VersionTypeConverter))]
+        public ImportModeEnum ImportMode { get; set; }
 
         [Category("Export Settings")]
         [DisplayName("Export as managed")]

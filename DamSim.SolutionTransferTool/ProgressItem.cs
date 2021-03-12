@@ -27,12 +27,17 @@ namespace DamSim.SolutionTransferTool
         public string SolutionVersion { get; set; }
         public Enumerations.RequestType Type { get; set; }
 
-        public void Error(DateTime date)
+        public void Error(DateTime date, string errorMessage = null)
         {
             Invoke(new Action(() =>
             {
                 pbProgress.Image = ilProgress.Images[2];
-                llDownloadLog.Visible = Request is ImportSolutionRequest;
+                if (Request is ExportSolutionRequest)
+                {
+                    llDownloadLog.Text = @"See error message";
+                    llDownloadLog.Tag = errorMessage;
+                }
+                llDownloadLog.Visible = true;
                 lblProgress.Text += $@" - {date:HH:mm:ss}";
             }));
         }
@@ -44,7 +49,7 @@ namespace DamSim.SolutionTransferTool
                 pnlProgress.Visible = true;
                 lblProgress.Text = string.Format(lblProgress.Tag.ToString(), DateTime.Now.ToString("G"));
                 pbProgress.Image = ilProgress.Images[1];
-                lblPercentage.Visible = Request is ImportSolutionRequest;
+                lblPercentage.Visible = Request is ImportSolutionRequest || Request is StageAndUpgradeRequest;
             }));
         }
 
@@ -53,18 +58,25 @@ namespace DamSim.SolutionTransferTool
             Invoke(new Action(() =>
             {
                 pbProgress.Image = ilProgress.Images[3];
-                llDownloadLog.Visible = Request is ImportSolutionRequest || Request is ExportSolutionRequest;
-                llDownloadLog.Text = Request is ImportSolutionRequest ? "Download log file" : "Download solution";
+                llDownloadLog.Visible = Request is ImportSolutionRequest || Request is ExportSolutionRequest || Request is StageAndUpgradeRequest;
+                llDownloadLog.Text = Request is ImportSolutionRequest || Request is StageAndUpgradeRequest ? "Download log file" : "Download solution";
                 lblProgress.Text += $@" - {date:HH:mm:ss}";
                 lblPercentage.Visible = false;
+
+                lblAction.Text = lblAction.Text.Replace("Upgrading", "Import");
             }));
         }
 
-        internal void ReportProgress(double v)
+        internal void ReportProgress(double v, bool isUpgrading = false)
         {
             Invoke(new Action(() =>
             {
                 lblPercentage.Text = $@"{v:N0} %";
+
+                if (isUpgrading)
+                {
+                    lblAction.Text = lblAction.Text.Replace("Import", "Upgrading");
+                }
             }));
         }
 
@@ -78,8 +90,23 @@ namespace DamSim.SolutionTransferTool
                     Service = Detail.GetCrmServiceClient()
                 });
             }
+            else if (Request is StageAndUpgradeRequest saur)
+            {
+                LogFileRequested?.Invoke(this, new DownloadLogEventArgs
+                {
+                    ImportJobId = saur.ImportJobId,
+                    Service = Detail.GetCrmServiceClient()
+                });
+            }
             else if (Request is ExportSolutionRequest esr)
             {
+                if (((LinkLabel)sender).Tag != null)
+                {
+                    MessageBox.Show(this, ((LinkLabel)sender).Tag.ToString(), @"Error", MessageBoxButtons.OK,
+                        MessageBoxIcon.Error);
+                    return;
+                }
+
                 var sfd = new SaveFileDialog
                 {
                     Filter = @"Zip file (*.zip)|*.zip",

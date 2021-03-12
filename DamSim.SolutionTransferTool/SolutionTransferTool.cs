@@ -212,21 +212,46 @@ namespace DamSim.SolutionTransferTool
 
             foreach (var solution in solutionsToTransfer)
             {
-                string newVersion = GetUpdatedSolutionVersion(solution);
+                string newVersion = solution.GetAttributeValue<string>("version");
 
                 if (settings.UpdateSourceSolutionVersionNew == UpdateVersionEnum.Yes
-                    || settings.UpdateSourceSolutionVersionNew == UpdateVersionEnum.Prompt &&
-                    DialogResult.Yes == MessageBox.Show(this, $@"Do you want to update version for solution {solution.GetAttributeValue<string>("friendlyname")} ?
+                    || settings.UpdateSourceSolutionVersionNew == UpdateVersionEnum.Prompt
+                    )
+                {
+                    if (settings.VersionSchema == VersionType.Manual)
+                    {
+                        var dialog = new UpdateVersionForm(solution.GetAttributeValue<string>("version"), solution.GetAttributeValue<string>("friendlyname"));
+                        if (dialog.ShowDialog(this) == DialogResult.OK)
+                        {
+                            newVersion = dialog.NewVersion;
+                        }
+                        else
+                        {
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        var computedNewVersion = GetUpdatedSolutionVersion(solution);
+                        ;
+                        if (settings.UpdateSourceSolutionVersionNew == UpdateVersionEnum.Prompt &&
+                            DialogResult.Yes == MessageBox.Show(this,
+                            $@"Do you want to update version for solution {solution.GetAttributeValue<string>("friendlyname")} ?
 
 Current version: {solution.GetAttributeValue<string>("version")}
-New version: {newVersion}",
-                        @"Question", MessageBoxButtons.YesNo, MessageBoxIcon.Question))
-                {
-                    solution["version"] = newVersion;
+New version: {computedNewVersion}",
+                            @"Question", MessageBoxButtons.YesNo, MessageBoxIcon.Question))
+                        {
+                            newVersion = computedNewVersion;
+                        }
+                    }
 
-                    Service.Update(solution);
-
-                    mForm.UpdateSolutionVersion(solution);
+                    if (solution.GetAttributeValue<string>("version") != newVersion)
+                    {
+                        solution["version"] = newVersion;
+                        Service.Update(solution);
+                        mForm.UpdateSolutionVersion(solution);
+                    }
                 }
 
                 var exportItem = new ExportToProcess
@@ -439,29 +464,40 @@ Would you like to open the file now ({e.Result})?
             return request;
         }
 
-        private ImportSolutionRequest PrepareImportRequest(ConnectionDetail detail, Entity solution, ImportSolutionRequest request = null)
+        private OrganizationRequest PrepareImportRequest(ConnectionDetail detail, Entity solution, OrganizationRequest request = null)
         {
+            var isPatch = solution.GetAttributeValue<string>("uniquename").ToLower().Contains("_patch_");
             var isNull = request == null;
             if (isNull)
             {
-                request = new ImportSolutionRequest();
+                request = settings.ImportMode == ImportModeEnum.Upgrade && !isPatch ? new StageAndUpgradeRequest() : (OrganizationRequest)new ImportSolutionRequest();
             }
 
-            request.ConvertToManaged = settings.ConvertToManaged;
-            request.OverwriteUnmanagedCustomizations = settings.OverwriteUnmanagedCustomizations;
-            request.PublishWorkflows = settings.PublishWorkflows;
-            request.ImportJobId = Guid.NewGuid();
-
-            if (ConnectionDetail.OrganizationMajorVersion >= 8)
+            if (request is ImportSolutionRequest isr)
             {
-                request.HoldingSolution = settings.HoldingSolution;
-                request.SkipProductUpdateDependencies = settings.SkipProductUpdateDependencies;
-            }
+                isr.ConvertToManaged = settings.ConvertToManaged;
+                isr.OverwriteUnmanagedCustomizations = settings.OverwriteUnmanagedCustomizations;
+                isr.PublishWorkflows = settings.PublishWorkflows;
+                isr.ImportJobId = Guid.NewGuid();
 
-            //if (ConnectionDetail.OrganizationMajorVersion >= 9 && ConnectionDetail.OrganizationMinorVersion >= 1)
-            //{
-            //    request.AsyncRibbonProcessing
-            //}
+                if (ConnectionDetail.OrganizationMajorVersion >= 8)
+                {
+                    isr.HoldingSolution = settings.ImportMode == ImportModeEnum.StageForUpgrade && !isPatch;
+                    isr.SkipProductUpdateDependencies = settings.SkipProductUpdateDependencies;
+                }
+            }
+            else if (request is StageAndUpgradeRequest saur)
+            {
+                saur.ConvertToManaged = settings.ConvertToManaged;
+                saur.OverwriteUnmanagedCustomizations = settings.OverwriteUnmanagedCustomizations;
+                saur.PublishWorkflows = settings.PublishWorkflows;
+                saur.ImportJobId = Guid.NewGuid();
+
+                if (ConnectionDetail.OrganizationMajorVersion >= 8)
+                {
+                    saur.SkipProductUpdateDependencies = settings.SkipProductUpdateDependencies;
+                }
+            }
 
             if (isNull)
             {
@@ -559,7 +595,7 @@ Would you like to open the file now ({e.Result})?
                     {
                         etp.Succeeded = false;
 
-                        progressItems[etp.Request].Error(DateTime.Now);
+                        progressItems[etp.Request].Error(DateTime.Now, evt.Error.Message);
                         pForm.ShowRetryButton(progressItems[etp.Request]);
 
                         ToggleWaitMode(false);
@@ -600,7 +636,7 @@ Would you like to open the file now ({e.Result})?
                 }
 
                 foreach (var itp in toProcessList.OfType<ImportToProcess>()
-                    .Where(i => i.Export == etp && i.Export.IsProcessed))
+                    .Where(i => i.Export == etp && i.Export.IsProcessed && i.Export.Succeeded))
                 {
                     if (itp.Previous != null && itp.Previous.IsProcessed == false || itp.IsProcessed)
                     {
@@ -612,7 +648,14 @@ Would you like to open the file now ({e.Result})?
                         progressItems[itp.Request].Solution = itp.Solution.GetAttributeValue<string>("friendlyname");
                         progressItems[itp.Request].Start();
 
-                        ((ImportSolutionRequest)itp.Request).CustomizationFile = itp.Export.SolutionContent;
+                        if (itp.Request is ImportSolutionRequest isr)
+                        {
+                            isr.CustomizationFile = itp.Export.SolutionContent;
+                        }
+                        else if (itp.Request is StageAndUpgradeRequest saur)
+                        {
+                            saur.CustomizationFile = itp.Export.SolutionContent;
+                        }
 
                         itp.AsyncOperationId = ((ExecuteAsyncResponse)itp.Detail.GetCrmServiceClient().Execute(new ExecuteAsyncRequest
                         {
@@ -662,6 +705,16 @@ Would you like to open the file now ({e.Result})?
                             }
                             else
                             {
+                                Guid importJobId = Guid.Empty;
+                                if (itp.Request is ImportSolutionRequest isr)
+                                {
+                                    importJobId = isr.ImportJobId;
+                                }
+                                else if (itp.Request is StageAndUpgradeRequest saur)
+                                {
+                                    importJobId = saur.ImportJobId;
+                                }
+
                                 var job = itp.Detail.GetCrmServiceClient().RetrieveMultiple(new QueryExpression("importjob")
                                 {
                                     NoLock = true,
@@ -670,7 +723,7 @@ Would you like to open the file now ({e.Result})?
                                     {
                                         Conditions=
                                         {
-                                            new ConditionExpression("importjobid", ConditionOperator.Equal, ((ImportSolutionRequest)itp.Request).ImportJobId)
+                                            new ConditionExpression("importjobid", ConditionOperator.Equal, importJobId)
                                         }
                                     }
                                 }).Entities.FirstOrDefault();
@@ -678,7 +731,7 @@ Would you like to open the file now ({e.Result})?
                                 if (job != null)
                                 {
                                     progressItems[itp.Request]
-                                        .ReportProgress(job.GetAttributeValue<double>("progress"));
+                                        .ReportProgress(job.GetAttributeValue<double>("progress"), job.GetAttributeValue<string>("operationcontext") == "Upgrade");
                                 }
                             }
                         }
@@ -755,7 +808,7 @@ Would you like to open the file now ({e.Result})?
 
             foreach (var ip in toProcessList.OfType<ImportToProcess>().Where(x => x.IsProcessed == false))
             {
-                PrepareImportRequest(ip.Detail, ip.Solution, (ImportSolutionRequest)ip.Request);
+                PrepareImportRequest(ip.Detail, ip.Solution, ip.Request);
             }
 
             ToggleWaitMode(true);
