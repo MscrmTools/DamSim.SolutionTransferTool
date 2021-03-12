@@ -38,7 +38,14 @@ namespace DamSim.SolutionTransferTool
         {
             foreach (var solution in Solutions)
             {
-                var item = new ListViewItem(solution.GetAttributeValue<string>("friendlyname")) { Tag = solution };
+                var item = new ListViewItem(solution.GetAttributeValue<string>("friendlyname"))
+                {
+                    SubItems =
+                    {
+                        solution.GetAttributeValue<string>("version")
+                    },
+                    Tag = solution
+                };
 
                 lvSolutions.Items.Add(item);
             }

@@ -35,6 +35,7 @@
             this.toolStrip1 = new System.Windows.Forms.ToolStrip();
             this.lvSolutions = new System.Windows.Forms.ListView();
             this.columnHeader1 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.columnHeader2 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.tsbDown = new System.Windows.Forms.ToolStripButton();
             this.tsbUp = new System.Windows.Forms.ToolStripButton();
             this.btnOk = new System.Windows.Forms.Button();
@@ -88,7 +89,9 @@
             // lvSolutions
             // 
             this.lvSolutions.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
-            this.columnHeader1});
+            this.columnHeader1,
+            this.columnHeader2
+            });
             this.lvSolutions.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lvSolutions.FullRowSelect = true;
             this.lvSolutions.Location = new System.Drawing.Point(0, 92);
@@ -102,6 +105,11 @@
             // 
             this.columnHeader1.Text = "Solution";
             this.columnHeader1.Width = 200;
+            // 
+            // columnHeader2
+            // 
+            this.columnHeader2.Text = "Version";
+            this.columnHeader2.Width = 100;
             // 
             // tsbDown
             // 
@@ -180,6 +188,7 @@
         private System.Windows.Forms.ToolStripButton tsbDown;
         private System.Windows.Forms.ListView lvSolutions;
         private System.Windows.Forms.ColumnHeader columnHeader1;
+        private System.Windows.Forms.ColumnHeader columnHeader2;
         private System.Windows.Forms.ToolStripButton tsbUp;
         private System.Windows.Forms.Button btnOk;
         private System.Windows.Forms.Button btnCancel;
