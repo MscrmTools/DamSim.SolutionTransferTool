@@ -127,10 +127,6 @@ namespace DamSim.SolutionTransferTool.AppCode
         public bool ExportSales { get; set; }
 
         [Category("Import Settings")]
-        [DisplayName("Stage for Upgrade")]
-        public bool HoldingSolution { get; set; }
-
-        [Category("Import Settings")]
         [DisplayName("Import Mode")]
         [Description(@"Update: Updates solution components but does not remove any
 Stage for upgrade: Install a new version of the solution and keep the old one
