@@ -33,17 +33,18 @@ namespace DamSim.SolutionTransferTool
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(SolutionTransferTool));
             this.tsMain = new System.Windows.Forms.ToolStrip();
-            this.tsbLoadSolutions = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
-            this.tsbTransfertSolution = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator4 = new System.Windows.Forms.ToolStripSeparator();
-            this.tsbSwitchOrgs = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator3 = new System.Windows.Forms.ToolStripSeparator();
             this.tsbFindMissingDependencies = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
-            this.tsbExportSolutions = new System.Windows.Forms.ToolStripButton();
             this.imageList1 = new System.Windows.Forms.ImageList(this.components);
             this.dpMain = new WeifenLuo.WinFormsUI.Docking.DockPanel();
+            this.tsbLoadSolutions = new System.Windows.Forms.ToolStripButton();
+            this.tsbTransfertSolution = new System.Windows.Forms.ToolStripButton();
+            this.tsbDownload = new System.Windows.Forms.ToolStripButton();
+            this.tsbSwitchOrgs = new System.Windows.Forms.ToolStripButton();
+            this.tsbExportSolutions = new System.Windows.Forms.ToolStripButton();
             this.tsMain.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -53,6 +54,7 @@ namespace DamSim.SolutionTransferTool
             this.tsbLoadSolutions,
             this.toolStripSeparator2,
             this.tsbTransfertSolution,
+            this.tsbDownload,
             this.toolStripSeparator4,
             this.tsbSwitchOrgs,
             this.toolStripSeparator3,
@@ -61,53 +63,25 @@ namespace DamSim.SolutionTransferTool
             this.tsbExportSolutions});
             this.tsMain.Location = new System.Drawing.Point(0, 0);
             this.tsMain.Name = "tsMain";
-            this.tsMain.Padding = new System.Windows.Forms.Padding(0, 0, 2, 0);
-            this.tsMain.Size = new System.Drawing.Size(1200, 32);
+            this.tsMain.Size = new System.Drawing.Size(1200, 34);
             this.tsMain.TabIndex = 0;
             this.tsMain.Text = "tsMain";
-            // 
-            // tsbLoadSolutions
-            // 
-            this.tsbLoadSolutions.Image = ((System.Drawing.Image)(resources.GetObject("tsbLoadSolutions.Image")));
-            this.tsbLoadSolutions.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.tsbLoadSolutions.Name = "tsbLoadSolutions";
-            this.tsbLoadSolutions.Size = new System.Drawing.Size(158, 29);
-            this.tsbLoadSolutions.Text = "Load Solutions";
-            this.tsbLoadSolutions.Click += new System.EventHandler(this.TsbLoadSolutionsClick);
+            this.tsMain.ItemClicked += new System.Windows.Forms.ToolStripItemClickedEventHandler(this.tsMain_ItemClicked);
             // 
             // toolStripSeparator2
             // 
             this.toolStripSeparator2.Name = "toolStripSeparator2";
-            this.toolStripSeparator2.Size = new System.Drawing.Size(6, 32);
-            // 
-            // tsbTransfertSolution
-            // 
-            this.tsbTransfertSolution.Image = ((System.Drawing.Image)(resources.GetObject("tsbTransfertSolution.Image")));
-            this.tsbTransfertSolution.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.tsbTransfertSolution.Name = "tsbTransfertSolution";
-            this.tsbTransfertSolution.Size = new System.Drawing.Size(170, 29);
-            this.tsbTransfertSolution.Text = "Transfer solution";
-            this.tsbTransfertSolution.Click += new System.EventHandler(this.TsbTransfertSolutionClick);
+            this.toolStripSeparator2.Size = new System.Drawing.Size(6, 34);
             // 
             // toolStripSeparator4
             // 
             this.toolStripSeparator4.Name = "toolStripSeparator4";
-            this.toolStripSeparator4.Size = new System.Drawing.Size(6, 32);
-            // 
-            // tsbSwitchOrgs
-            // 
-            this.tsbSwitchOrgs.Image = global::DamSim.SolutionTransferTool.Properties.Resources.arrow_switch;
-            this.tsbSwitchOrgs.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.tsbSwitchOrgs.Name = "tsbSwitchOrgs";
-            this.tsbSwitchOrgs.Size = new System.Drawing.Size(203, 29);
-            this.tsbSwitchOrgs.Text = "Switch organizations";
-            this.tsbSwitchOrgs.ToolTipText = "Switch source and target organizations";
-            this.tsbSwitchOrgs.Click += new System.EventHandler(this.tsbSwitchOrgs_Click);
+            this.toolStripSeparator4.Size = new System.Drawing.Size(6, 34);
             // 
             // toolStripSeparator3
             // 
             this.toolStripSeparator3.Name = "toolStripSeparator3";
-            this.toolStripSeparator3.Size = new System.Drawing.Size(6, 32);
+            this.toolStripSeparator3.Size = new System.Drawing.Size(6, 34);
             // 
             // tsbFindMissingDependencies
             // 
@@ -124,18 +98,7 @@ namespace DamSim.SolutionTransferTool
             // toolStripSeparator1
             // 
             this.toolStripSeparator1.Name = "toolStripSeparator1";
-            this.toolStripSeparator1.Size = new System.Drawing.Size(6, 32);
-            // 
-            // tsbExportSolutions
-            // 
-            this.tsbExportSolutions.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.tsbExportSolutions.Enabled = false;
-            this.tsbExportSolutions.Image = ((System.Drawing.Image)(resources.GetObject("tsbExportSolutions.Image")));
-            this.tsbExportSolutions.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.tsbExportSolutions.Name = "tsbExportSolutions";
-            this.tsbExportSolutions.Size = new System.Drawing.Size(251, 29);
-            this.tsbExportSolutions.Text = "Download exported solutions";
-            this.tsbExportSolutions.Click += new System.EventHandler(this.tsbExportSolutions_Click);
+            this.toolStripSeparator1.Size = new System.Drawing.Size(6, 34);
             // 
             // imageList1
             // 
@@ -147,11 +110,58 @@ namespace DamSim.SolutionTransferTool
             // 
             this.dpMain.Dock = System.Windows.Forms.DockStyle.Fill;
             this.dpMain.DocumentStyle = WeifenLuo.WinFormsUI.Docking.DocumentStyle.DockingWindow;
-            this.dpMain.Location = new System.Drawing.Point(0, 32);
+            this.dpMain.Location = new System.Drawing.Point(0, 34);
             this.dpMain.Margin = new System.Windows.Forms.Padding(5);
             this.dpMain.Name = "dpMain";
-            this.dpMain.Size = new System.Drawing.Size(1200, 1013);
+            this.dpMain.Size = new System.Drawing.Size(1200, 1011);
             this.dpMain.TabIndex = 1;
+            // 
+            // tsbLoadSolutions
+            // 
+            this.tsbLoadSolutions.Image = ((System.Drawing.Image)(resources.GetObject("tsbLoadSolutions.Image")));
+            this.tsbLoadSolutions.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.tsbLoadSolutions.Name = "tsbLoadSolutions";
+            this.tsbLoadSolutions.Size = new System.Drawing.Size(150, 29);
+            this.tsbLoadSolutions.Text = "Load Solutions";
+            this.tsbLoadSolutions.Click += new System.EventHandler(this.TsbLoadSolutionsClick);
+            // 
+            // tsbTransfertSolution
+            // 
+            this.tsbTransfertSolution.Image = ((System.Drawing.Image)(resources.GetObject("tsbTransfertSolution.Image")));
+            this.tsbTransfertSolution.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.tsbTransfertSolution.Name = "tsbTransfertSolution";
+            this.tsbTransfertSolution.Size = new System.Drawing.Size(162, 29);
+            this.tsbTransfertSolution.Text = "Transfer solution";
+            this.tsbTransfertSolution.Click += new System.EventHandler(this.TsbTransfertSolutionClick);
+            // 
+            // tsbDownload
+            // 
+            this.tsbDownload.Image = global::DamSim.SolutionTransferTool.Properties.Resources.inbox_download;
+            this.tsbDownload.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.tsbDownload.Name = "tsbDownload";
+            this.tsbDownload.Size = new System.Drawing.Size(183, 29);
+            this.tsbDownload.Text = "Download solution";
+            // 
+            // tsbSwitchOrgs
+            // 
+            this.tsbSwitchOrgs.Image = global::DamSim.SolutionTransferTool.Properties.Resources.arrow_switch;
+            this.tsbSwitchOrgs.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.tsbSwitchOrgs.Name = "tsbSwitchOrgs";
+            this.tsbSwitchOrgs.Size = new System.Drawing.Size(195, 29);
+            this.tsbSwitchOrgs.Text = "Switch organizations";
+            this.tsbSwitchOrgs.ToolTipText = "Switch source and target organizations";
+            this.tsbSwitchOrgs.Click += new System.EventHandler(this.tsbSwitchOrgs_Click);
+            // 
+            // tsbExportSolutions
+            // 
+            this.tsbExportSolutions.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsbExportSolutions.Enabled = false;
+            this.tsbExportSolutions.Image = ((System.Drawing.Image)(resources.GetObject("tsbExportSolutions.Image")));
+            this.tsbExportSolutions.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.tsbExportSolutions.Name = "tsbExportSolutions";
+            this.tsbExportSolutions.Size = new System.Drawing.Size(251, 29);
+            this.tsbExportSolutions.Text = "Download exported solutions";
+            this.tsbExportSolutions.Click += new System.EventHandler(this.tsbExportSolutions_Click);
             // 
             // SolutionTransferTool
             // 
@@ -184,5 +194,6 @@ namespace DamSim.SolutionTransferTool
         private WeifenLuo.WinFormsUI.Docking.DockPanel dpMain;
         private ToolStripSeparator toolStripSeparator1;
         private ToolStripButton tsbExportSolutions;
+        private ToolStripButton tsbDownload;
     }
 }

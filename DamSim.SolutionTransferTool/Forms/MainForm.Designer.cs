@@ -61,10 +61,11 @@
             // 
             this.lstTargetEnvironments.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.lstTargetEnvironments.Location = new System.Drawing.Point(225, 31);
-            this.lstTargetEnvironments.Margin = new System.Windows.Forms.Padding(6);
+            this.lstTargetEnvironments.HideSelection = false;
+            this.lstTargetEnvironments.Location = new System.Drawing.Point(184, 26);
+            this.lstTargetEnvironments.Margin = new System.Windows.Forms.Padding(5, 5, 5, 5);
             this.lstTargetEnvironments.Name = "lstTargetEnvironments";
-            this.lstTargetEnvironments.Size = new System.Drawing.Size(740, 43);
+            this.lstTargetEnvironments.Size = new System.Drawing.Size(606, 36);
             this.lstTargetEnvironments.TabIndex = 7;
             this.lstTargetEnvironments.UseCompatibleStateImageBehavior = false;
             this.lstTargetEnvironments.View = System.Windows.Forms.View.List;
@@ -73,10 +74,10 @@
             // btnAddTarget
             // 
             this.btnAddTarget.Font = new System.Drawing.Font("Segoe UI", 8.25F);
-            this.btnAddTarget.Location = new System.Drawing.Point(9, 31);
-            this.btnAddTarget.Margin = new System.Windows.Forms.Padding(6);
+            this.btnAddTarget.Location = new System.Drawing.Point(7, 26);
+            this.btnAddTarget.Margin = new System.Windows.Forms.Padding(5, 5, 5, 5);
             this.btnAddTarget.Name = "btnAddTarget";
-            this.btnAddTarget.Size = new System.Drawing.Size(204, 46);
+            this.btnAddTarget.Size = new System.Drawing.Size(167, 38);
             this.btnAddTarget.TabIndex = 3;
             this.btnAddTarget.Text = "Add Organization";
             this.btnAddTarget.UseVisualStyleBackColor = true;
@@ -87,10 +88,10 @@
             this.lblSource.AutoSize = true;
             this.lblSource.Font = new System.Drawing.Font("Segoe UI", 8.25F);
             this.lblSource.ForeColor = System.Drawing.Color.Red;
-            this.lblSource.Location = new System.Drawing.Point(15, 42);
-            this.lblSource.Margin = new System.Windows.Forms.Padding(6, 0, 6, 0);
+            this.lblSource.Location = new System.Drawing.Point(12, 35);
+            this.lblSource.Margin = new System.Windows.Forms.Padding(5, 0, 5, 0);
             this.lblSource.Name = "lblSource";
-            this.lblSource.Size = new System.Drawing.Size(449, 28);
+            this.lblSource.Size = new System.Drawing.Size(393, 23);
             this.lblSource.TabIndex = 3;
             this.lblSource.Text = "Not selected yet (use XrmToolBox connect button)";
             // 
@@ -98,6 +99,7 @@
             // 
             this.scOrganizations.Dock = System.Windows.Forms.DockStyle.Top;
             this.scOrganizations.Location = new System.Drawing.Point(0, 0);
+            this.scOrganizations.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.scOrganizations.Name = "scOrganizations";
             // 
             // scOrganizations.Panel1
@@ -107,8 +109,9 @@
             // scOrganizations.Panel2
             // 
             this.scOrganizations.Panel2.Controls.Add(this.gbTargetOrgs);
-            this.scOrganizations.Size = new System.Drawing.Size(1467, 84);
-            this.scOrganizations.SplitterDistance = 489;
+            this.scOrganizations.Size = new System.Drawing.Size(1200, 70);
+            this.scOrganizations.SplitterDistance = 400;
+            this.scOrganizations.SplitterWidth = 3;
             this.scOrganizations.TabIndex = 8;
             // 
             // gbSource
@@ -116,8 +119,10 @@
             this.gbSource.Controls.Add(this.lblSource);
             this.gbSource.Dock = System.Windows.Forms.DockStyle.Fill;
             this.gbSource.Location = new System.Drawing.Point(0, 0);
+            this.gbSource.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.gbSource.Name = "gbSource";
-            this.gbSource.Size = new System.Drawing.Size(489, 84);
+            this.gbSource.Padding = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.gbSource.Size = new System.Drawing.Size(400, 70);
             this.gbSource.TabIndex = 0;
             this.gbSource.TabStop = false;
             this.gbSource.Text = "Source organization";
@@ -128,8 +133,10 @@
             this.gbTargetOrgs.Controls.Add(this.btnAddTarget);
             this.gbTargetOrgs.Dock = System.Windows.Forms.DockStyle.Fill;
             this.gbTargetOrgs.Location = new System.Drawing.Point(0, 0);
+            this.gbTargetOrgs.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.gbTargetOrgs.Name = "gbTargetOrgs";
-            this.gbTargetOrgs.Size = new System.Drawing.Size(974, 84);
+            this.gbTargetOrgs.Padding = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.gbTargetOrgs.Size = new System.Drawing.Size(797, 70);
             this.gbTargetOrgs.TabIndex = 0;
             this.gbTargetOrgs.TabStop = false;
             this.gbTargetOrgs.Text = "Target organization(s)";
@@ -140,11 +147,11 @@
             this.grpSourceSolution.Controls.Add(this.panel1);
             this.grpSourceSolution.Dock = System.Windows.Forms.DockStyle.Fill;
             this.grpSourceSolution.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.grpSourceSolution.Location = new System.Drawing.Point(0, 84);
-            this.grpSourceSolution.Margin = new System.Windows.Forms.Padding(6);
+            this.grpSourceSolution.Location = new System.Drawing.Point(0, 70);
+            this.grpSourceSolution.Margin = new System.Windows.Forms.Padding(5, 5, 5, 5);
             this.grpSourceSolution.Name = "grpSourceSolution";
-            this.grpSourceSolution.Padding = new System.Windows.Forms.Padding(6);
-            this.grpSourceSolution.Size = new System.Drawing.Size(1467, 747);
+            this.grpSourceSolution.Padding = new System.Windows.Forms.Padding(5, 5, 5, 5);
+            this.grpSourceSolution.Size = new System.Drawing.Size(1200, 622);
             this.grpSourceSolution.TabIndex = 9;
             this.grpSourceSolution.TabStop = false;
             this.grpSourceSolution.Text = "Solutions";
@@ -162,14 +169,15 @@
             this.lstSourceSolutions.Font = new System.Drawing.Font("Segoe UI", 8.25F);
             this.lstSourceSolutions.FullRowSelect = true;
             this.lstSourceSolutions.HideSelection = false;
-            this.lstSourceSolutions.Location = new System.Drawing.Point(6, 75);
-            this.lstSourceSolutions.Margin = new System.Windows.Forms.Padding(6);
+            this.lstSourceSolutions.Location = new System.Drawing.Point(5, 63);
+            this.lstSourceSolutions.Margin = new System.Windows.Forms.Padding(5, 5, 5, 5);
             this.lstSourceSolutions.Name = "lstSourceSolutions";
-            this.lstSourceSolutions.Size = new System.Drawing.Size(1455, 666);
+            this.lstSourceSolutions.Size = new System.Drawing.Size(1190, 554);
             this.lstSourceSolutions.TabIndex = 6;
             this.lstSourceSolutions.UseCompatibleStateImageBehavior = false;
             this.lstSourceSolutions.View = System.Windows.Forms.View.Details;
             this.lstSourceSolutions.ColumnClick += new System.Windows.Forms.ColumnClickEventHandler(this.lstSourceSolutions_ColumnClick);
+            this.lstSourceSolutions.KeyDown += new System.Windows.Forms.KeyEventHandler(this.lstSourceSolutions_KeyDown);
             // 
             // uniquename
             // 
@@ -208,44 +216,44 @@
             this.panel1.Controls.Add(this.label2);
             this.panel1.Controls.Add(this.pictureBox1);
             this.panel1.Dock = System.Windows.Forms.DockStyle.Top;
-            this.panel1.Location = new System.Drawing.Point(6, 34);
-            this.panel1.Margin = new System.Windows.Forms.Padding(6);
+            this.panel1.Location = new System.Drawing.Point(5, 29);
+            this.panel1.Margin = new System.Windows.Forms.Padding(5, 5, 5, 5);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(1455, 41);
+            this.panel1.Size = new System.Drawing.Size(1190, 34);
             this.panel1.TabIndex = 5;
             // 
             // label2
             // 
             this.label2.AutoSize = true;
             this.label2.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.label2.Location = new System.Drawing.Point(48, 7);
-            this.label2.Margin = new System.Windows.Forms.Padding(6, 0, 6, 0);
+            this.label2.Location = new System.Drawing.Point(39, 6);
+            this.label2.Margin = new System.Windows.Forms.Padding(5, 0, 5, 0);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(642, 30);
+            this.label2.Size = new System.Drawing.Size(552, 25);
             this.label2.TabIndex = 6;
             this.label2.Text = "Click on \"Load Solutions\" to display and select solution(s) to transfer";
             // 
             // pictureBox1
             // 
             this.pictureBox1.Image = ((System.Drawing.Image)(resources.GetObject("pictureBox1.Image")));
-            this.pictureBox1.Location = new System.Drawing.Point(6, 6);
-            this.pictureBox1.Margin = new System.Windows.Forms.Padding(6);
+            this.pictureBox1.Location = new System.Drawing.Point(5, 5);
+            this.pictureBox1.Margin = new System.Windows.Forms.Padding(5, 5, 5, 5);
             this.pictureBox1.Name = "pictureBox1";
-            this.pictureBox1.Size = new System.Drawing.Size(29, 30);
+            this.pictureBox1.Size = new System.Drawing.Size(24, 25);
             this.pictureBox1.TabIndex = 5;
             this.pictureBox1.TabStop = false;
             // 
             // MainForm
             // 
             this.AllowEndUserDocking = false;
-            this.AutoScaleDimensions = new System.Drawing.SizeF(11F, 24F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1467, 831);
+            this.ClientSize = new System.Drawing.Size(1200, 692);
             this.CloseButton = false;
             this.CloseButtonVisible = false;
             this.Controls.Add(this.grpSourceSolution);
             this.Controls.Add(this.scOrganizations);
-            this.Margin = new System.Windows.Forms.Padding(6);
+            this.Margin = new System.Windows.Forms.Padding(5, 5, 5, 5);
             this.Name = "MainForm";
             this.TabText = "Solutions and Organizations";
             this.Text = "Solutions and Organizations";

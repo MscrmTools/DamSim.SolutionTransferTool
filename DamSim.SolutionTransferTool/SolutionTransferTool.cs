@@ -860,5 +860,67 @@ Would you like to open the file now ({e.Result})?
                 MessageBox.Show(this, $@"Solution(s) saved to {cfd.FolderPath}", @"Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
+
+        private void tsMain_ItemClicked(object sender, ToolStripItemClickedEventArgs e)
+        {
+            if (mForm.SelectedSolutions.Count == 0)
+            {
+                MessageBox.Show(this, @"No solution selected!", @"Warning", MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+                return;
+            }
+
+            var path = "";
+
+            if (string.IsNullOrEmpty(settings.AutoExportSolutionsFolderPath))
+            {
+                var dialog = new CustomFolderBrowserDialog();
+                if (dialog.ShowDialog(this) != DialogResult.OK)
+                {
+                    return;
+                }
+
+                path = dialog.FolderPath;
+            }
+
+            var solutions = mForm.SelectedSolutions;
+
+            WorkAsync(new WorkAsyncInfo
+            {
+                Message = "",
+                Work = (bw, evt) =>
+                {
+                    foreach (var solution in solutions)
+                    {
+                        bw.ReportProgress(0, $"Exporting solution {solution.GetAttributeValue<string>("friendlyname")}...");
+
+                        var request = new ExportSolutionRequest();
+                        PrepareExportRequest(solution, request);
+
+                        string filename = Path.Combine(path,
+                            $"{solution.GetAttributeValue<string>("uniquename")}_{solution.GetAttributeValue<string>("version").Replace(".", "_")}{(request.Managed ? "_managed" : "")}.zip");
+                        var contentFile = ((ExportSolutionResponse)sourceService.Execute(request)).ExportSolutionFile;
+                        File.WriteAllBytes(filename, contentFile);
+                    }
+                },
+                PostWorkCallBack = evt =>
+                {
+                    if (evt.Error != null)
+                    {
+                        MessageBox.Show(this, $@"An error occured when exporting solution(s): {evt.Error.Message}", @"Error", MessageBoxButtons.OK,
+                            MessageBoxIcon.Error);
+                    }
+                    else
+                    {
+                        MessageBox.Show(this, $@"Solution(s) exported to {path}", @"Success", MessageBoxButtons.OK,
+                            MessageBoxIcon.Information);
+                    }
+                },
+                ProgressChanged = evt =>
+                {
+                    SetWorkingMessage(evt.UserState.ToString());
+                }
+            });
+        }
     }
 }
