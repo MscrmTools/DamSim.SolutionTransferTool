@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
+  <metadata>
+    <id>DamSim.SolutionTransferTool</id>
+    <version>1.2021.3.16</version>
+    <title>Solution Transfer Tool for XrmToolBox</title>
+    <authors>DamSim</authors>
+    <owners>DamSim</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <projectUrl>https://github.com/MscrmTools/DamSim.SolutionTransferTool</projectUrl>
+    <iconUrl>https://raw.githubusercontent.com/wiki/MscrmTools/XrmToolBox/Images/DamSimIcon.png</iconUrl>
+    <description>Transfer solutions across organizations</description>
+    <summary>Transfer solutions across organizations</summary>
+    <releaseNotes>- Cancel publish action if not all import action succeeded
+    - Fixed opening of log file if path contains space
+    </releaseNotes>
+    <tags>XrmToolBox Solutions Transfer</tags>
+    <dependencies>
+      <dependency id="XrmToolBox" version="1.2018.7.28" />
+    </dependencies>
+  </metadata>
+</package>
