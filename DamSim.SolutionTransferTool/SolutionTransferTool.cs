@@ -355,7 +355,7 @@ Would you like to open the file now ({e.Result})?
                                     @"File Download", MessageBoxButtons.YesNo, MessageBoxIcon.Information) ==
                                 DialogResult.Yes)
                             {
-                                Process.Start("Excel.exe", e.Result.ToString());
+                                Process.Start("Excel.exe", $"\"{e.Result}\"");
                             }
                         }
 
