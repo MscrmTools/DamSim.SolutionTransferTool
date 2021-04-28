@@ -742,7 +742,7 @@ Would you like to open the file now ({e.Result})?
                 {
                     if (toProcessList.OfType<ImportToProcess>()
                             .Where(i => i.Detail == ptp.Detail)
-                            .All(i => i.IsProcessed)
+                            .All(i => i.Succeeded)
                         && ptp.IsProcessed == false)
                     {
                         progressItems[ptp.Request].Start();
@@ -771,6 +771,12 @@ Would you like to open the file now ({e.Result})?
                                 }
                             }
                         });
+                    }
+                    else
+                    {
+                        progressItems[ptp.Request].Error(DateTime.Now);
+                        timer.Stop();
+                        ToggleWaitMode(false);
                     }
                 }
             }
