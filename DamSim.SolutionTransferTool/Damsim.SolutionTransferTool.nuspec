@@ -11,8 +11,7 @@
     <iconUrl>https://raw.githubusercontent.com/wiki/MscrmTools/XrmToolBox/Images/DamSimIcon.png</iconUrl>
     <description>Transfer solutions across organizations</description>
     <summary>Transfer solutions across organizations</summary>
-    <releaseNotes>- Cancel publish action if not all import action succeeded
-    - Fixed opening of log file if path contains space
+    <releaseNotes>- Fixed issue with transfering unmanaged solutions
     </releaseNotes>
     <tags>XrmToolBox Solutions Transfer</tags>
     <dependencies>

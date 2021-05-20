@@ -743,7 +743,7 @@ Would you like to open the file now ({e.Result})?
                     if (toProcessList.OfType<ImportToProcess>()
                             .Where(i => i.Detail == ptp.Detail)
                             .All(i => i.Succeeded)
-                        && ptp.IsProcessed == false)
+                        && !ptp.IsProcessed && !ptp.IsProcessing)
                     {
                         progressItems[ptp.Request].Start();
 
@@ -772,7 +772,11 @@ Would you like to open the file now ({e.Result})?
                             }
                         });
                     }
-                    else
+
+                    if (toProcessList.OfType<ImportToProcess>()
+                           .Where(i => i.Detail == ptp.Detail)
+                           .Any(i => i.IsProcessed && !i.Succeeded)
+                       && !ptp.IsProcessed)
                     {
                         progressItems[ptp.Request].Error(DateTime.Now);
                         timer.Stop();
@@ -835,9 +839,11 @@ Would you like to open the file now ({e.Result})?
                     tsbFindMissingDependencies.Enabled = false;
                     tsbSwitchOrgs.Enabled = false;
                     tsbExportSolutions.Enabled = false;
+                    tsbDownload.Enabled = false;
                 }
                 else
                 {
+                    tsbDownload.Enabled = true;
                     tsbTransfertSolution.Enabled = true;
                     tsbLoadSolutions.Enabled = true;
                     tsbFindMissingDependencies.Enabled = true;
@@ -848,26 +854,7 @@ Would you like to open the file now ({e.Result})?
             }));
         }
 
-        private void tsbExportSolutions_Click(object sender, EventArgs e)
-        {
-            var cfd = new CustomFolderBrowserDialog();
-            if (cfd.ShowDialog(Parent) == DialogResult.OK)
-            {
-                foreach (var etp in toProcessList.OfType<ExportToProcess>())
-                {
-                    if (etp.SolutionContent != null)
-                    {
-                        string filename = Path.Combine(cfd.FolderPath,
-                            $"{etp.Solution.GetAttributeValue<string>("uniquename")}_{etp.Solution.GetAttributeValue<string>("version").Replace(".", "_")}{(((ExportSolutionRequest)etp.Request).Managed ? "_managed" : "")}.zip");
-                        File.WriteAllBytes(filename, etp.SolutionContent);
-                    }
-                }
-
-                MessageBox.Show(this, $@"Solution(s) saved to {cfd.FolderPath}", @"Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-        }
-
-        private void tsMain_ItemClicked(object sender, ToolStripItemClickedEventArgs e)
+        private void tsbDownload_Click(object sender, EventArgs e)
         {
             if (mForm.SelectedSolutions.Count == 0)
             {
@@ -927,6 +914,25 @@ Would you like to open the file now ({e.Result})?
                     SetWorkingMessage(evt.UserState.ToString());
                 }
             });
+        }
+
+        private void tsbExportSolutions_Click(object sender, EventArgs e)
+        {
+            var cfd = new CustomFolderBrowserDialog();
+            if (cfd.ShowDialog(Parent) == DialogResult.OK)
+            {
+                foreach (var etp in toProcessList.OfType<ExportToProcess>())
+                {
+                    if (etp.SolutionContent != null)
+                    {
+                        string filename = Path.Combine(cfd.FolderPath,
+                            $"{etp.Solution.GetAttributeValue<string>("uniquename")}_{etp.Solution.GetAttributeValue<string>("version").Replace(".", "_")}{(((ExportSolutionRequest)etp.Request).Managed ? "_managed" : "")}.zip");
+                        File.WriteAllBytes(filename, etp.SolutionContent);
+                    }
+                }
+
+                MessageBox.Show(this, $@"Solution(s) saved to {cfd.FolderPath}", @"Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
         }
     }
 }
