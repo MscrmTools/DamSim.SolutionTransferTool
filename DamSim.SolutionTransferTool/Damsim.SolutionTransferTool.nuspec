@@ -11,7 +11,7 @@
     <iconUrl>https://raw.githubusercontent.com/wiki/MscrmTools/XrmToolBox/Images/DamSimIcon.png</iconUrl>
     <description>Transfer solutions across organizations</description>
     <summary>Transfer solutions across organizations</summary>
-    <releaseNotes>- Fixed issue with transfering unmanaged solutions
+    <releaseNotes>- Fixed issue where solution version is not automatically updated (#27)
     </releaseNotes>
     <tags>XrmToolBox Solutions Transfer</tags>
     <dependencies>

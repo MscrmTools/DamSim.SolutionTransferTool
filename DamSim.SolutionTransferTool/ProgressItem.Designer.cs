@@ -75,6 +75,7 @@
             this.ilProgress.Images.SetKeyName(1, "play-rounded-button.png");
             this.ilProgress.Images.SetKeyName(2, "error.png");
             this.ilProgress.Images.SetKeyName(3, "checked.png");
+            this.ilProgress.Images.SetKeyName(4, "Upgrade.png");
             // 
             // panel1
             // 
@@ -82,7 +83,7 @@
             this.panel1.Controls.Add(this.pbProgress);
             this.panel1.Dock = System.Windows.Forms.DockStyle.Left;
             this.panel1.Location = new System.Drawing.Point(0, 0);
-            this.panel1.Margin = new System.Windows.Forms.Padding(5, 5, 5, 5);
+            this.panel1.Margin = new System.Windows.Forms.Padding(5);
             this.panel1.Name = "panel1";
             this.panel1.Size = new System.Drawing.Size(60, 98);
             this.panel1.TabIndex = 6;
@@ -105,7 +106,7 @@
             this.pbProgress.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.pbProgress.Image = global::DamSim.SolutionTransferTool.Properties.Resources.progressbar;
             this.pbProgress.Location = new System.Drawing.Point(6, 14);
-            this.pbProgress.Margin = new System.Windows.Forms.Padding(5, 5, 5, 5);
+            this.pbProgress.Margin = new System.Windows.Forms.Padding(5);
             this.pbProgress.Name = "pbProgress";
             this.pbProgress.Size = new System.Drawing.Size(48, 49);
             this.pbProgress.TabIndex = 0;
@@ -117,7 +118,7 @@
             this.pnlProgress.Controls.Add(this.lblProgress);
             this.pnlProgress.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.pnlProgress.Location = new System.Drawing.Point(60, 67);
-            this.pnlProgress.Margin = new System.Windows.Forms.Padding(5, 5, 5, 5);
+            this.pnlProgress.Margin = new System.Windows.Forms.Padding(5);
             this.pnlProgress.Name = "pnlProgress";
             this.pnlProgress.Size = new System.Drawing.Size(597, 31);
             this.pnlProgress.TabIndex = 7;
@@ -158,7 +159,7 @@
             this.Controls.Add(this.panel1);
             this.Controls.Add(this.lblDirection);
             this.Controls.Add(this.lblAction);
-            this.Margin = new System.Windows.Forms.Padding(5, 5, 5, 5);
+            this.Margin = new System.Windows.Forms.Padding(5);
             this.Name = "ProgressItem";
             this.Size = new System.Drawing.Size(657, 98);
             this.Load += new System.EventHandler(this.ProgressItem_Load);

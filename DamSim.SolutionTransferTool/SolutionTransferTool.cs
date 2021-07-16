@@ -233,14 +233,20 @@ namespace DamSim.SolutionTransferTool
                     else
                     {
                         var computedNewVersion = GetUpdatedSolutionVersion(solution);
-                        ;
-                        if (settings.UpdateSourceSolutionVersionNew == UpdateVersionEnum.Prompt &&
-                            DialogResult.Yes == MessageBox.Show(this,
+
+                        if (settings.UpdateSourceSolutionVersionNew == UpdateVersionEnum.Prompt)
+                        {
+                            if (DialogResult.Yes == MessageBox.Show(this,
                             $@"Do you want to update version for solution {solution.GetAttributeValue<string>("friendlyname")} ?
 
 Current version: {solution.GetAttributeValue<string>("version")}
 New version: {computedNewVersion}",
                             @"Question", MessageBoxButtons.YesNo, MessageBoxIcon.Question))
+                            {
+                                newVersion = computedNewVersion;
+                            }
+                        }
+                        else
                         {
                             newVersion = computedNewVersion;
                         }
@@ -661,6 +667,8 @@ Would you like to open the file now ({e.Result})?
                         {
                             Request = itp.Request
                         })).AsyncJobId;
+
+                        lastImportId = ((ImportSolutionRequest)itp.Request).ImportJobId;
                         itp.IsProcessing = true;
                     }
                     else if (itp.IsProcessing)
@@ -846,7 +854,7 @@ Would you like to open the file now ({e.Result})?
                     tsbDownload.Enabled = true;
                     tsbTransfertSolution.Enabled = true;
                     tsbLoadSolutions.Enabled = true;
-                    tsbFindMissingDependencies.Enabled = true;
+                    tsbFindMissingDependencies.Enabled = lastImportId != Guid.Empty;
                     tsbSwitchOrgs.Enabled = true;
                     tsbExportSolutions.Enabled = toProcessList.OfType<ExportToProcess>().Any(etp =>
                         etp.SolutionContent != null);

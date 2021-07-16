@@ -75,7 +75,14 @@ namespace DamSim.SolutionTransferTool
 
                 if (isUpgrading)
                 {
+                    if (lblAction.Text.IndexOf("Import") >= 0)
+                    {
+                        lblProgress.Text += $@" - {DateTime.Now:HH:mm:ss}";
+                    }
+
                     lblAction.Text = lblAction.Text.Replace("Import", "Upgrading");
+                    pbProgress.Image = ilProgress.Images[4];
+                    lblPercentage.Visible = false;
                 }
             }));
         }
