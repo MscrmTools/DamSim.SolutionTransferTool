@@ -636,7 +636,7 @@ Would you like to open the file now ({e.Result})?
         {
             foreach (var etp in toProcessList.OfType<ExportToProcess>())
             {
-                if (etp.IsProcessed == false && etp.IsProcessing == false)
+                if (!etp.IsProcessed && !etp.IsProcessing)
                 {
                     StartExport(etp);
                 }
@@ -644,15 +644,16 @@ Would you like to open the file now ({e.Result})?
                 foreach (var itp in toProcessList.OfType<ImportToProcess>()
                     .Where(i => i.Export == etp && i.Export.IsProcessed && i.Export.Succeeded))
                 {
-                    if (itp.Previous != null && itp.Previous.IsProcessed == false || itp.IsProcessed)
+                    if (itp.Previous != null && !itp.Previous.IsProcessed || itp.IsProcessed)
                     {
                         continue;
                     }
 
-                    if (itp.IsProcessing == false && itp.IsProcessed == false)
+                    if (!itp.IsProcessing && !itp.IsProcessed)
                     {
                         progressItems[itp.Request].Solution = itp.Solution.GetAttributeValue<string>("friendlyname");
                         progressItems[itp.Request].Start();
+                        itp.IsProcessing = true;
 
                         if (itp.Request is ImportSolutionRequest isr)
                         {
@@ -669,7 +670,6 @@ Would you like to open the file now ({e.Result})?
                         })).AsyncJobId;
 
                         lastImportId = ((ImportSolutionRequest)itp.Request).ImportJobId;
-                        itp.IsProcessing = true;
                     }
                     else if (itp.IsProcessing)
                     {
