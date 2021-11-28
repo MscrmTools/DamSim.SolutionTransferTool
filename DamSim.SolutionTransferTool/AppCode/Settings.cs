@@ -72,6 +72,11 @@ namespace DamSim.SolutionTransferTool.AppCode
         public bool ConvertToManaged { get; set; }
 
         [Category("Export Settings")]
+        [DisplayName("Export asynchronously")]
+        [Description("Sets whether solution must be exported asynchronously")]
+        public bool ExportAsynchronously { get; set; }
+
+        [Category("Export Settings")]
         [DisplayName("Export Autonumbers Settings")]
         [Description("Sets whether auto numbering settings should be included in the solution being exported")]
         public bool ExportAutoNumberingSettings { get; set; }

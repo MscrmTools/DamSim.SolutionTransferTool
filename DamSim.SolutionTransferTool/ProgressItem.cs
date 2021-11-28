@@ -53,31 +53,33 @@ namespace DamSim.SolutionTransferTool
             }));
         }
 
-        public void Success(DateTime date)
+        public void Success(BaseToProcess p)
         {
             Invoke(new Action(() =>
             {
                 pbProgress.Image = ilProgress.Images[3];
                 llDownloadLog.Visible = Request is ImportSolutionRequest || Request is ExportSolutionRequest || Request is StageAndUpgradeRequest;
                 llDownloadLog.Text = Request is ImportSolutionRequest || Request is StageAndUpgradeRequest ? "Download log file" : "Download solution";
-                lblProgress.Text += $@" - {date:HH:mm:ss}";
+                lblProgress.Text = p.FinishedOn;
                 lblPercentage.Visible = false;
 
                 lblAction.Text = lblAction.Text.Replace("Upgrading", "Import");
             }));
         }
 
-        internal void ReportProgress(double v, bool isUpgrading = false)
+        internal void ReportProgress(double v, BaseToProcess p, bool isUpgrading = false)
         {
             Invoke(new Action(() =>
             {
                 lblPercentage.Text = $@"{v:N0} %";
+                lblProgress.Text = p.Ago;
 
                 if (isUpgrading)
                 {
                     if (lblAction.Text.IndexOf("Import") >= 0)
                     {
-                        lblProgress.Text += $@" - {DateTime.Now:HH:mm:ss}";
+                        //lblProgress.Text += $@" - {DateTime.Now:HH:mm:ss}";
+                        lblProgress.Text = p.FinishedOn;
                     }
 
                     lblAction.Text = lblAction.Text.Replace("Import", "Upgrading");

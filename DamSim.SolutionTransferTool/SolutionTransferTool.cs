@@ -17,6 +17,7 @@ using System.Windows.Forms;
 using WeifenLuo.WinFormsUI.Docking;
 using XrmToolBox.Extensibility;
 using XrmToolBox.Extensibility.Interfaces;
+using static DamSim.SolutionTransferTool.BaseToProcess;
 
 namespace DamSim.SolutionTransferTool
 {
@@ -578,9 +579,26 @@ Would you like to open the file now ({e.Result})?
 
             ToggleWaitMode(true);
 
+            etp.StartedOn = DateTime.Now;
             progressItems[etp.Request].Solution = etp.Solution.GetAttributeValue<string>("friendlyname");
             progressItems[etp.Request].SolutionVersion = etp.Solution.GetAttributeValue<string>("version");
             progressItems[etp.Request].Start();
+
+            if (settings.ExportAsynchronously)
+            {
+                var request2 = new OrganizationRequest("ExportSolutionAsync");
+                request2.Parameters = etp.Request.Parameters;
+
+                var response2 = Service.Execute(request2);
+                etp.AsyncOperationId = (Guid)response2.Results["AsyncOperationId"];
+                etp.ExportJobId = (Guid)response2.Results["ExportJobId"];
+
+                etp.IsProcessed = false;
+                etp.IsProcessing = true;
+                etp.Succeeded = false;
+
+                return;
+            }
 
             WorkAsync(new WorkAsyncInfo
             {
@@ -596,7 +614,7 @@ Would you like to open the file now ({e.Result})?
                     etp.IsProcessed = true;
                     etp.IsProcessing = false;
                     etp.Succeeded = true;
-
+                    etp.CompletedOn = DateTime.Now;
                     if (evt.Error != null)
                     {
                         etp.Succeeded = false;
@@ -608,7 +626,7 @@ Would you like to open the file now ({e.Result})?
                     }
                     else
                     {
-                        progressItems[etp.Request].Success(DateTime.Now);
+                        progressItems[etp.Request].Success(etp);
                         progressItems[etp.Request].SolutionFile = etp.SolutionContent;
                     }
 
@@ -640,6 +658,108 @@ Would you like to open the file now ({e.Result})?
                 {
                     StartExport(etp);
                 }
+                else if (etp.IsProcessing && settings.ExportAsynchronously)
+                {
+                    var task = etp.Detail.GetCrmServiceClient().RetrieveMultiple(new QueryExpression("asyncoperation")
+                    {
+                        NoLock = true,
+                        ColumnSet = new ColumnSet(true),
+                        Criteria =
+                                {
+                                    Conditions=
+                                    {
+                                        new ConditionExpression("asyncoperationid", ConditionOperator.Equal, etp.AsyncOperationId)
+                                    }
+                                }
+                    }).Entities.FirstOrDefault();
+
+                    if (task != null)
+                    {
+                        if (task.GetAttributeValue<OptionSetValue>("statecode")?.Value == 3)
+                        {
+                            etp.IsProcessed = true;
+                            etp.IsProcessing = false;
+                            if (task.GetAttributeValue<OptionSetValue>("statuscode")?.Value == 30)
+                            {
+                                var exportRecord = Service.Retrieve("exportsolutionupload", etp.ExportJobId, new ColumnSet("solutionfile"));
+
+                                var initRequest = new InitializeFileBlocksDownloadRequest() { FileAttributeName = "solutionfile", Target = exportRecord.ToEntityReference() };
+                                var initResponse = (InitializeFileBlocksDownloadResponse)Service.Execute(initRequest);
+
+                                var increment = 4194304;
+                                var from = 0;
+                                var fileSize = initResponse.FileSizeInBytes;
+                                byte[] downloaded = new byte[fileSize];
+                                var fileContinuationToken = initResponse.FileContinuationToken;
+
+                                while (from < fileSize)
+                                {
+                                    var blockRequest = new DownloadBlockRequest()
+                                    {
+                                        Offset = from,
+                                        BlockLength = increment,
+                                        FileContinuationToken = fileContinuationToken
+                                    };
+                                    var blockResponse = (DownloadBlockResponse)Service.Execute(blockRequest);
+                                    blockResponse.Data.CopyTo(downloaded, from);
+                                    from += increment;
+                                }
+
+                                etp.SolutionContent = downloaded;
+                                etp.CompletedOn = DateTime.Now;
+
+                                progressItems[etp.Request].Success(etp);
+                                etp.Succeeded = true;
+
+                                if (settings.AutoExportSolutionsToDisk || etp.IsSolutionDownload)
+                                {
+                                    var fileName =
+                                        $"{progressItems[etp.Request].Solution}_{progressItems[etp.Request].SolutionVersion.Replace(".", "_")}.zip";
+                                    var filePath = Path.Combine(settings.AutoExportSolutionsFolderPath, fileName);
+                                    try
+                                    {
+                                        File.WriteAllBytes(filePath, etp.SolutionContent);
+
+                                        if (etp.IsSolutionDownload)
+                                        {
+                                            Invoke(new Action(() =>
+                                            {
+                                                MessageBox.Show(this, $@"Solution exported to {filePath}", @"Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                                            }));
+                                        }
+                                    }
+                                    catch (Exception error)
+                                    {
+                                        Invoke(new Action(() =>
+                                            {
+                                                MessageBox.Show(this, $@"Error when saving solution {fileName} to disk.
+
+{error.Message}", @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                            }));
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                progressItems[etp.Request].Error(task.GetAttributeValue<DateTime>("completedon").ToLocalTime());
+                                ToggleWaitMode(false);
+                                timer.Stop();
+                                pForm.ShowRetryButton(progressItems[etp.Request]);
+                            }
+
+                            if (toProcessList.All(tp => tp.IsProcessed))
+                            {
+                                timer.Stop();
+                                ToggleWaitMode(false);
+                            }
+                        }
+                        else
+                        {
+                            progressItems[etp.Request]
+                                .ReportProgress(task.GetAttributeValue<double>("progress"), etp);
+                        }
+                    }
+                }
 
                 foreach (var itp in toProcessList.OfType<ImportToProcess>()
                     .Where(i => i.Export == etp && i.Export.IsProcessed && i.Export.Succeeded))
@@ -651,6 +771,7 @@ Would you like to open the file now ({e.Result})?
 
                     if (!itp.IsProcessing && !itp.IsProcessed)
                     {
+                        itp.StartedOn = DateTime.Now;
                         progressItems[itp.Request].Solution = itp.Solution.GetAttributeValue<string>("friendlyname");
                         progressItems[itp.Request].Start();
                         itp.IsProcessing = true;
@@ -692,9 +813,10 @@ Would you like to open the file now ({e.Result})?
                             {
                                 itp.IsProcessed = true;
                                 itp.IsProcessing = false;
+                                itp.CompletedOn = DateTime.Now;
                                 if (task.GetAttributeValue<OptionSetValue>("statuscode")?.Value == 30)
                                 {
-                                    progressItems[itp.Request].Success(task.GetAttributeValue<DateTime>("completedon").ToLocalTime());
+                                    progressItems[itp.Request].Success(itp);
                                     itp.Succeeded = true;
                                 }
                                 else
@@ -739,7 +861,7 @@ Would you like to open the file now ({e.Result})?
                                 if (job != null)
                                 {
                                     progressItems[itp.Request]
-                                        .ReportProgress(job.GetAttributeValue<double>("progress"), job.GetAttributeValue<string>("operationcontext") == "Upgrade");
+                                        .ReportProgress(job.GetAttributeValue<double>("progress"), itp, job.GetAttributeValue<string>("operationcontext") == "Upgrade");
                                 }
                             }
                         }
@@ -753,6 +875,7 @@ Would you like to open the file now ({e.Result})?
                             .All(i => i.Succeeded)
                         && !ptp.IsProcessed && !ptp.IsProcessing)
                     {
+                        ptp.StartedOn = DateTime.Now;
                         progressItems[ptp.Request].Start();
 
                         WorkAsync(new WorkAsyncInfo
@@ -770,7 +893,10 @@ Would you like to open the file now ({e.Result})?
                                 if (evt.Error != null)
                                     progressItems[ptp.Request].Error(DateTime.Now);
                                 else
-                                    progressItems[ptp.Request].Success(DateTime.Now);
+                                {
+                                    ptp.CompletedOn = DateTime.Now;
+                                    progressItems[ptp.Request].Success(ptp);
+                                }
 
                                 if (toProcessList.All(tp => tp.IsProcessed))
                                 {
@@ -871,6 +997,13 @@ Would you like to open the file now ({e.Result})?
                 return;
             }
 
+            if (mForm.SelectedSolutions.Count > 1)
+            {
+                MessageBox.Show(this, @"Please select only one solution!", @"Warning", MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+                return;
+            }
+
             var path = "";
 
             if (string.IsNullOrEmpty(settings.AutoExportSolutionsFolderPath))
@@ -885,6 +1018,34 @@ Would you like to open the file now ({e.Result})?
             }
 
             var solutions = mForm.SelectedSolutions;
+
+            if (settings.ExportAsynchronously)
+            {
+                progressItems = new Dictionary<OrganizationRequest, ProgressItem>();
+                toProcessList = new List<BaseToProcess>();
+                var exportItem = new ExportToProcess
+                {
+                    Solution = solutions.First(),
+                    Previous = toProcessList.OfType<ExportToProcess>().LastOrDefault(),
+                    Request = PrepareExportRequest(solutions.First()),
+                    Detail = sourceDetail,
+                    IsSolutionDownload = true
+                };
+                toProcessList.Add(exportItem);
+
+                pForm.Items = progressItems.Values.ToList();
+                pForm.Start();
+
+                pForm.Show(dpMain, DockState.DockRight);
+
+                StartExport(toProcessList.OfType<ExportToProcess>().First());
+
+                timer.Elapsed += Timer_Elapsed;
+                timer.Interval = settings.RefreshIntervalProp.TotalMilliseconds;
+                timer.Start();
+
+                return;
+            }
 
             WorkAsync(new WorkAsyncInfo
             {
