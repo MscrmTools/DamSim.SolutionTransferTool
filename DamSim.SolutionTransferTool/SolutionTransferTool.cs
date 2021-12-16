@@ -93,6 +93,8 @@ namespace DamSim.SolutionTransferTool
 
         public override void ClosingPlugin(PluginCloseInfo info)
         {
+            if (ConnectionDetail == null) return;
+
             settings.Save(ConnectionDetail?.ConnectionName);
 
             base.ClosingPlugin(info);
