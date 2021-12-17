@@ -11,7 +11,7 @@
     <iconUrl>https://raw.githubusercontent.com/wiki/MscrmTools/XrmToolBox/Images/DamSimIcon.png</iconUrl>
     <description>Transfer solutions across organizations</description>
     <summary>Transfer solutions across organizations</summary>
-    <releaseNotes>- Export of solution can be asynchronous now. No more Timeout error! Use settings to use this new possibility
+    <releaseNotes>Fixed download of exported solution when exporting asynchronously
     </releaseNotes>
     <tags>XrmToolBox Solutions Transfer</tags>
     <dependencies>
