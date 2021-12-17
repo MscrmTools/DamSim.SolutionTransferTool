@@ -711,6 +711,8 @@ Would you like to open the file now ({e.Result})?
                                 etp.CompletedOn = DateTime.Now;
 
                                 progressItems[etp.Request].Success(etp);
+                                progressItems[etp.Request].SolutionFile = downloaded;
+
                                 etp.Succeeded = true;
 
                                 if (settings.AutoExportSolutionsToDisk || etp.IsSolutionDownload)
