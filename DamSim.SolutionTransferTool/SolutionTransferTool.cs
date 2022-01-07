@@ -199,7 +199,7 @@ namespace DamSim.SolutionTransferTool
         {
             if (mForm.SelectedSolutions.Count == 0 || !AdditionalConnectionDetails.Any())
             {
-                MessageBox.Show(@"You have to select a source solution and a target organization to continue.", @"Warning",
+                MessageBox.Show(this, @"You have to select a source solution and a target organization to continue.", @"Warning",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
@@ -208,6 +208,27 @@ namespace DamSim.SolutionTransferTool
             if (solutionsToTransfer.Count == 0)
             {
                 return;
+            }
+
+            var hasMissingConnectionReferences = false;
+
+            foreach (var solution in solutionsToTransfer)
+            {
+                foreach (var detail in AdditionalConnectionDetails)
+                {
+                    hasMissingConnectionReferences = hasMissingConnectionReferences || SolutionHelper.CheckForNewConnectionReferences(solution.GetAttributeValue<string>("uniquename"), Service, detail.GetCrmServiceClient());
+                }
+            }
+
+            if (hasMissingConnectionReferences)
+            {
+                var result = MessageBox.Show(this, @"It seems you are shipping new connection reference(s).
+
+It is recommended to use Power Apps maker portal to import the solution that contains new connection references so that you can map new connection references in the target environment(s)
+
+Are you sure you want to continue and import solution(s) using this tool?", @"New Connection reference(s) detected!",
+                   MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                if (result == DialogResult.No) return;
             }
 
             progressItems = new Dictionary<OrganizationRequest, ProgressItem>();

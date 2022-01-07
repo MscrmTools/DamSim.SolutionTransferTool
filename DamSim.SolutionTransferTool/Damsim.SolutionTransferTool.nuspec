@@ -1,24 +1,25 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
-  <metadata>
-    <id>DamSim.SolutionTransferTool</id>
-    <version>1.2021.3.16</version>
-    <title>Solution Transfer Tool for XrmToolBox</title>
-    <authors>DamSim</authors>
-    <owners>DamSim</owners>
-    <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <projectUrl>https://github.com/MscrmTools/DamSim.SolutionTransferTool</projectUrl>
-    <iconUrl>https://raw.githubusercontent.com/wiki/MscrmTools/XrmToolBox/Images/DamSimIcon.png</iconUrl>
-    <description>Transfer solutions across organizations</description>
-    <summary>Transfer solutions across organizations</summary>
-    <releaseNotes>Fixed download of exported solution when exporting asynchronously
-    </releaseNotes>
-    <tags>XrmToolBox Solutions Transfer</tags>
-    <dependencies>
-      <dependency id="XrmToolBox" version="1.2018.7.28" />
-    </dependencies>
-  </metadata>
-  <files>
-    <file src="bin\Release\DamSim.SolutionTransferTool.dll" target="lib\net452\Plugins" />
-  </files>
+	<metadata>
+		<id>DamSim.SolutionTransferTool</id>
+		<version>1.2021.3.16</version>
+		<title>Solution Transfer Tool for XrmToolBox</title>
+		<authors>DamSim</authors>
+		<owners>DamSim</owners>
+		<requireLicenseAcceptance>false</requireLicenseAcceptance>
+		<projectUrl>https://github.com/MscrmTools/DamSim.SolutionTransferTool</projectUrl>
+		<iconUrl>https://raw.githubusercontent.com/wiki/MscrmTools/XrmToolBox/Images/DamSimIcon.png</iconUrl>
+		<description>Transfer solutions across organizations</description>
+		<summary>Transfer solutions across organizations</summary>
+		<releaseNotes>
+			Added pre check before importing solutions if new connection references are to be released. This is to warn the user he/she should use Power Apps maker portal to import solution and map the new connection references
+		</releaseNotes>
+		<tags>XrmToolBox Solutions Transfer</tags>
+		<dependencies>
+			<dependency id="XrmToolBox" version="1.2018.7.28" />
+		</dependencies>
+	</metadata>
+	<files>
+		<file src="bin\Release\DamSim.SolutionTransferTool.dll" target="lib\net452\Plugins" />
+	</files>
 </package>
