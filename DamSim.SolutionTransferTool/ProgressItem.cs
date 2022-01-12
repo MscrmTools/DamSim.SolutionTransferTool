@@ -24,6 +24,7 @@ namespace DamSim.SolutionTransferTool
         public OrganizationRequest Request { get; set; }
         public string Solution { get; set; }
         public byte[] SolutionFile { get; set; }
+        public string SolutionFileName => Request is ExportSolutionRequest esr ? $"{esr.SolutionName}_{SolutionVersion.Replace(".", "_")}{(esr.Managed ? "_managed" : "")}.zip" : "";
         public string SolutionVersion { get; set; }
         public Enumerations.RequestType Type { get; set; }
 
