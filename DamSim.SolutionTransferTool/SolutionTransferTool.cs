@@ -1023,13 +1023,6 @@ Would you like to open the file now ({e.Result})?
                 return;
             }
 
-            if (mForm.SelectedSolutions.Count > 1)
-            {
-                MessageBox.Show(this, @"Please select only one solution!", @"Warning", MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
-                return;
-            }
-
             var path = "";
 
             if (string.IsNullOrEmpty(settings.AutoExportSolutionsFolderPath))
@@ -1049,15 +1042,19 @@ Would you like to open the file now ({e.Result})?
             {
                 progressItems = new Dictionary<OrganizationRequest, ProgressItem>();
                 toProcessList = new List<BaseToProcess>();
-                var exportItem = new ExportToProcess
+
+                foreach (var solution in solutions)
                 {
-                    Solution = solutions.First(),
-                    Previous = toProcessList.OfType<ExportToProcess>().LastOrDefault(),
-                    Request = PrepareExportRequest(solutions.First()),
-                    Detail = sourceDetail,
-                    IsSolutionDownload = true
-                };
-                toProcessList.Add(exportItem);
+                    var exportItem = new ExportToProcess
+                    {
+                        Solution = solution,
+                        Previous = toProcessList.OfType<ExportToProcess>().LastOrDefault(),
+                        Request = PrepareExportRequest(solution),
+                        Detail = sourceDetail,
+                        IsSolutionDownload = true
+                    };
+                    toProcessList.Add(exportItem);
+                }
 
                 pForm.Items = progressItems.Values.ToList();
                 pForm.Start();
