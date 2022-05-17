@@ -12,8 +12,7 @@
     <description>Transfer solutions across organizations</description>
     <summary>Transfer solutions across organizations</summary>
     <releaseNotes>
-      Removed connection references pre check for version under 9.1
-      Fixed downloaded solution name
+      Allow to download multiple solutions (#33)
     </releaseNotes>
     <tags>XrmToolBox Solutions Transfer</tags>
     <dependencies>
