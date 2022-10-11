@@ -12,7 +12,7 @@
     <description>Transfer solutions across organizations</description>
     <summary>Transfer solutions across organizations</summary>
     <releaseNotes>
-      Allow to download multiple solutions (#33)
+      Fixed solution list sorting issues (#35)
     </releaseNotes>
     <tags>XrmToolBox Solutions Transfer</tags>
     <dependencies>

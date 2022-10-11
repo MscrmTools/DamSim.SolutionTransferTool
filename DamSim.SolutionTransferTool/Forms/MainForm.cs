@@ -109,17 +109,16 @@ namespace DamSim.SolutionTransferTool.Forms
 
         private void lstSourceSolutions_ColumnClick(object sender, ColumnClickEventArgs e)
         {
-            if (e.Column == currentsColumnOrder)
-            {
-                lstSourceSolutions.Sorting = lstSourceSolutions.Sorting == SortOrder.Ascending ? SortOrder.Descending : SortOrder.Ascending;
-
-                lstSourceSolutions.ListViewItemSorter = new ListViewItemComparer(e.Column, lstSourceSolutions.Sorting);
-            }
-            else
+            if (e.Column != currentsColumnOrder)
             {
                 currentsColumnOrder = e.Column;
-                lstSourceSolutions.ListViewItemSorter = new ListViewItemComparer(e.Column, SortOrder.Ascending);
+                lstSourceSolutions.Sorting = SortOrder.Descending;
             }
+
+            lstSourceSolutions.Sorting = lstSourceSolutions.Sorting == SortOrder.Ascending ? SortOrder.Descending : SortOrder.Ascending;
+            lstSourceSolutions.ListViewItemSorter = new ListViewItemComparer(e.Column, lstSourceSolutions.Sorting);
+
+            lstSourceSolutions.Sort();
         }
 
         private void lstSourceSolutions_KeyDown(Object sender, KeyEventArgs e)
