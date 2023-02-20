@@ -27,6 +27,7 @@ namespace DamSim.SolutionTransferTool
 
         private readonly MainForm mForm;
         private readonly ProgressForm pForm;
+        private bool cancelPending;
         private OrganizationRequest currentRequest;
         private string lastConnectionName;
         private Guid lastImportId;
@@ -677,6 +678,36 @@ Would you like to open the file now ({e.Result})?
 
         private void Timer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
         {
+            if (cancelPending)
+            {
+                foreach (var etp in toProcessList.OfType<ExportToProcess>())
+                {
+                    etp.IsProcessed = false;
+                    etp.IsProcessing = false;
+                    progressItems[etp.Request].Error(DateTime.Now.ToLocalTime(), "Export canceled by user");
+                }
+
+                foreach (var itp in toProcessList.OfType<ImportToProcess>())
+                {
+                    itp.IsProcessed = false;
+                    itp.IsProcessing = false;
+                    progressItems[itp.Request].Error(DateTime.Now.ToLocalTime(), "Export canceled by user");
+                }
+
+                foreach (var ptp in toProcessList.OfType<PublishToProcess>())
+                {
+                    ptp.IsProcessed = false;
+                    ptp.IsProcessing = false;
+                    progressItems[ptp.Request].Error(DateTime.Now.ToLocalTime(), "Export canceled by user");
+                }
+
+                timer.Stop();
+                ToggleWaitMode(false);
+                cancelPending = false;
+                tsbCancel.Text = "Cancel";
+                return;
+            }
+
             foreach (var etp in toProcessList.OfType<ExportToProcess>())
             {
                 if (!etp.IsProcessed && !etp.IsProcessing)
@@ -1000,6 +1031,7 @@ Would you like to open the file now ({e.Result})?
                     tsbSwitchOrgs.Enabled = false;
                     tsbExportSolutions.Enabled = false;
                     tsbDownload.Enabled = false;
+                    tsbCancel.Visible = true;
                 }
                 else
                 {
@@ -1010,8 +1042,15 @@ Would you like to open the file now ({e.Result})?
                     tsbSwitchOrgs.Enabled = true;
                     tsbExportSolutions.Enabled = toProcessList.OfType<ExportToProcess>().Any(etp =>
                         etp.SolutionContent != null);
+                    tsbCancel.Visible = false;
                 }
             }));
+        }
+
+        private void tsbCancel_Click(object sender, EventArgs e)
+        {
+            cancelPending = true;
+            tsbCancel.Text = "Cancelling...";
         }
 
         private void tsbDownload_Click(object sender, EventArgs e)

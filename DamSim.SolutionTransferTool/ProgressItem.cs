@@ -58,6 +58,9 @@ namespace DamSim.SolutionTransferTool
         {
             Invoke(new Action(() =>
             {
+                // If error already set, we cannot succeed
+                if (pbProgress.Image == ilProgress.Images[2]) return;
+
                 pbProgress.Image = ilProgress.Images[3];
                 llDownloadLog.Visible = Request is ImportSolutionRequest || Request is ExportSolutionRequest || Request is StageAndUpgradeRequest;
                 llDownloadLog.Text = Request is ImportSolutionRequest || Request is StageAndUpgradeRequest ? "Download log file" : "Download solution";

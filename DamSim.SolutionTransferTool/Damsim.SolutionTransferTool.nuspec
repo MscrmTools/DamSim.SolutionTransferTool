@@ -12,7 +12,7 @@
     <description>Transfer solutions across organizations</description>
     <summary>Transfer solutions across organizations</summary>
     <releaseNotes>
-      Fixed solution list sorting issues (#35)
+      Added possibility to cancel a solution import flow
     </releaseNotes>
     <tags>XrmToolBox Solutions Transfer</tags>
     <dependencies>

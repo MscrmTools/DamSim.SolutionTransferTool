@@ -73,6 +73,16 @@ namespace DamSim.SolutionTransferTool.Properties {
         /// <summary>
         ///   Recherche une ressource localisée de type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap icons8_cancel {
+            get {
+                object obj = ResourceManager.GetObject("icons8-cancel", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Recherche une ressource localisée de type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap inbox_download {
             get {
                 object obj = ResourceManager.GetObject("inbox_download", resourceCulture);
