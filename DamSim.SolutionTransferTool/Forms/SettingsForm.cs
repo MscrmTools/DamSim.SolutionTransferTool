@@ -5,14 +5,18 @@ namespace DamSim.SolutionTransferTool.Forms
 {
     public partial class SettingsForm : DockContent
     {
-        public SettingsForm()
+        public SettingsForm(bool isFromOneShot = false)
         {
             InitializeComponent();
+
+            pnlBottom.Visible = isFromOneShot;
+            pnlReviewWarning.Visible = !isFromOneShot;
         }
 
         public Settings Settings
         {
             set => SettingsPropertyPanel.SelectedObject = value;
+            get => (Settings)SettingsPropertyPanel.SelectedObject;
         }
     }
 }

@@ -50,7 +50,7 @@ namespace DamSim.SolutionTransferTool.AppCode
         //Date
     }
 
-    public class Settings
+    public class Settings : ICloneable
     {
         public Settings()
         {
@@ -195,6 +195,37 @@ Upgrade: Install a new version of the solution and remove missing components")]
         [Description("Defines which part of the solution number must be incremented")]
         [TypeConverter(typeof(VersionTypeConverter))]
         public VersionType VersionSchema { get; set; }
+
+        public object Clone()
+        {
+            return new Settings
+            {
+                AutoExportSolutionsFolderPath = AutoExportSolutionsFolderPath,
+                AutoExportSolutionsToDisk = AutoExportSolutionsToDisk,
+                ConvertToManaged = ConvertToManaged,
+                ExportAsynchronously = ExportAsynchronously,
+                ExportAutoNumberingSettings = ExportAutoNumberingSettings,
+                ExportCalendarSettings = ExportCalendarSettings,
+                ExportCustomizationSettings = ExportCustomizationSettings,
+                ExportEmailTrackingSettings = ExportEmailTrackingSettings,
+                ExportExternalApplications = ExportExternalApplications,
+                ExportGeneralSettings = ExportGeneralSettings,
+                ExportIsvConfig = ExportIsvConfig,
+                ExportMarketingSettings = ExportMarketingSettings,
+                ExportOutlookSynchronizationSettings = ExportOutlookSynchronizationSettings,
+                ExportRelationshipRoles = ExportRelationshipRoles,
+                ExportSales = ExportSales,
+                ImportMode = ImportMode,
+                Managed = Managed,
+                OverwriteUnmanagedCustomizations = OverwriteUnmanagedCustomizations,
+                Publish = Publish,
+                PublishWorkflows = PublishWorkflows,
+                RefreshIntervalProp = RefreshIntervalProp,
+                SkipProductUpdateDependencies = SkipProductUpdateDependencies,
+                UpdateSourceSolutionVersionNew = UpdateSourceSolutionVersionNew,
+                VersionSchema = VersionSchema
+            };
+        }
 
         public void Save(string name = null)
         {

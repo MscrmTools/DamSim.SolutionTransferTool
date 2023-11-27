@@ -32,6 +32,7 @@ namespace DamSim.SolutionTransferTool
         private string lastConnectionName;
         private Guid lastImportId;
         private IOrganizationService lastTargetService;
+        private Settings oneTimeSettings;
         private Dictionary<OrganizationRequest, ProgressItem> progressItems;
         private Settings settings;
         private SettingsForm sForm;
@@ -198,6 +199,8 @@ namespace DamSim.SolutionTransferTool
 
         private void TsbTransfertSolutionClick(object sender, EventArgs e)
         {
+            oneTimeSettings = null;
+
             if (mForm.SelectedSolutions.Count == 0 || !AdditionalConnectionDetails.Any())
             {
                 MessageBox.Show(this, @"You have to select a source solution and a target organization to continue.", @"Warning",
@@ -205,6 +208,36 @@ namespace DamSim.SolutionTransferTool
                 return;
             }
 
+            DoTransfer();
+        }
+
+        private void tssbTransfer_DropDownItemClicked(object sender, ToolStripItemClickedEventArgs e)
+        {
+            if (mForm.SelectedSolutions.Count == 0 || !AdditionalConnectionDetails.Any())
+            {
+                MessageBox.Show(this, @"You have to select a source solution and a target organization to continue.", @"Warning",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            using (var dialog = new SettingsForm(true))
+            {
+                dialog.Settings = (Settings)settings.Clone();
+                var result = dialog.ShowDialog(this);
+                if (result == DialogResult.OK)
+                {
+                    oneTimeSettings = (Settings)dialog.Settings;
+                    DoTransfer();
+                }
+            }
+        }
+
+        #endregion UI Events
+
+        #region Methods
+
+        private void DoTransfer()
+        {
             var solutionsToTransfer = PreparareSolutionsToTransfer();
             if (solutionsToTransfer.Count == 0)
             {
@@ -242,11 +275,11 @@ Are you sure you want to continue and import solution(s) using this tool?", @"Ne
             {
                 string newVersion = solution.GetAttributeValue<string>("version");
 
-                if (settings.UpdateSourceSolutionVersionNew == UpdateVersionEnum.Yes
-                    || settings.UpdateSourceSolutionVersionNew == UpdateVersionEnum.Prompt
+                if ((oneTimeSettings ?? settings).UpdateSourceSolutionVersionNew == UpdateVersionEnum.Yes
+                    || (oneTimeSettings ?? settings).UpdateSourceSolutionVersionNew == UpdateVersionEnum.Prompt
                     )
                 {
-                    if (settings.VersionSchema == VersionType.Manual)
+                    if ((oneTimeSettings ?? settings).VersionSchema == VersionType.Manual)
                     {
                         var dialog = new UpdateVersionForm(solution.GetAttributeValue<string>("version"), solution.GetAttributeValue<string>("friendlyname"));
                         if (dialog.ShowDialog(this) == DialogResult.OK)
@@ -262,7 +295,7 @@ Are you sure you want to continue and import solution(s) using this tool?", @"Ne
                     {
                         var computedNewVersion = GetUpdatedSolutionVersion(solution);
 
-                        if (settings.UpdateSourceSolutionVersionNew == UpdateVersionEnum.Prompt)
+                        if ((oneTimeSettings ?? settings).UpdateSourceSolutionVersionNew == UpdateVersionEnum.Prompt)
                         {
                             if (DialogResult.Yes == MessageBox.Show(this,
                             $@"Do you want to update version for solution {solution.GetAttributeValue<string>("friendlyname")} ?
@@ -310,7 +343,7 @@ New version: {computedNewVersion}",
                 }
             }
 
-            if (!settings.Managed && settings.Publish)
+            if (!(oneTimeSettings ?? settings).Managed && (oneTimeSettings ?? settings).Publish)
             {
                 foreach (var detail in AdditionalConnectionDetails)
                 {
@@ -331,13 +364,9 @@ New version: {computedNewVersion}",
             StartExport(toProcessList.OfType<ExportToProcess>().First());
 
             timer.Elapsed += Timer_Elapsed;
-            timer.Interval = settings.RefreshIntervalProp.TotalMilliseconds;
+            timer.Interval = (oneTimeSettings ?? settings).RefreshIntervalProp.TotalMilliseconds;
             timer.Start();
         }
-
-        #endregion UI Events
-
-        #region Methods
 
         private void DownloadLogFile(Guid importJobId, IOrganizationService service)
         {
@@ -403,7 +432,7 @@ Would you like to open the file now ({e.Result})?
         {
             string version = etpSolution.GetAttributeValue<string>("version");
             var versionParts = version.Split('.');
-            switch (settings.VersionSchema)
+            switch (oneTimeSettings?.VersionSchema ?? settings.VersionSchema)
             {
                 case VersionType.Major:
                     versionParts[0] = (int.Parse(versionParts[0]) + 1).ToString();
@@ -465,22 +494,22 @@ Would you like to open the file now ({e.Result})?
                 request = new ExportSolutionRequest();
             }
 
-            request.Managed = settings.Managed;
+            request.Managed = (oneTimeSettings ?? settings).Managed;
             request.SolutionName = solution.GetAttributeValue<string>("uniquename");
-            request.ExportAutoNumberingSettings = settings.ExportAutoNumberingSettings;
-            request.ExportCalendarSettings = settings.ExportCalendarSettings;
-            request.ExportCustomizationSettings = settings.ExportCustomizationSettings;
-            request.ExportEmailTrackingSettings = settings.ExportEmailTrackingSettings;
-            request.ExportGeneralSettings = settings.ExportGeneralSettings;
-            request.ExportIsvConfig = settings.ExportIsvConfig;
-            request.ExportMarketingSettings = settings.ExportMarketingSettings;
-            request.ExportOutlookSynchronizationSettings = settings.ExportOutlookSynchronizationSettings;
-            request.ExportRelationshipRoles = settings.ExportRelationshipRoles;
-            request.ExportSales = settings.ExportSales;
+            request.ExportAutoNumberingSettings = (oneTimeSettings ?? settings).ExportAutoNumberingSettings;
+            request.ExportCalendarSettings = (oneTimeSettings ?? settings).ExportCalendarSettings;
+            request.ExportCustomizationSettings = (oneTimeSettings ?? settings).ExportCustomizationSettings;
+            request.ExportEmailTrackingSettings = (oneTimeSettings ?? settings).ExportEmailTrackingSettings;
+            request.ExportGeneralSettings = (oneTimeSettings ?? settings).ExportGeneralSettings;
+            request.ExportIsvConfig = (oneTimeSettings ?? settings).ExportIsvConfig;
+            request.ExportMarketingSettings = (oneTimeSettings ?? settings).ExportMarketingSettings;
+            request.ExportOutlookSynchronizationSettings = (oneTimeSettings ?? settings).ExportOutlookSynchronizationSettings;
+            request.ExportRelationshipRoles = (oneTimeSettings ?? settings).ExportRelationshipRoles;
+            request.ExportSales = (oneTimeSettings ?? settings).ExportSales;
 
             if (ConnectionDetail.OrganizationMajorVersion >= 8)
             {
-                request.ExportExternalApplications = settings.ExportExternalApplications;
+                request.ExportExternalApplications = (oneTimeSettings ?? settings).ExportExternalApplications;
             }
 
             if (isNull)
@@ -504,32 +533,32 @@ Would you like to open the file now ({e.Result})?
             var isNull = request == null;
             if (isNull)
             {
-                request = settings.ImportMode == ImportModeEnum.Upgrade && !isPatch ? new StageAndUpgradeRequest() : (OrganizationRequest)new ImportSolutionRequest();
+                request = (oneTimeSettings ?? settings).ImportMode == ImportModeEnum.Upgrade && !isPatch ? new StageAndUpgradeRequest() : (OrganizationRequest)new ImportSolutionRequest();
             }
 
             if (request is ImportSolutionRequest isr)
             {
-                isr.ConvertToManaged = settings.ConvertToManaged;
-                isr.OverwriteUnmanagedCustomizations = settings.OverwriteUnmanagedCustomizations;
-                isr.PublishWorkflows = settings.PublishWorkflows;
+                isr.ConvertToManaged = (oneTimeSettings ?? settings).ConvertToManaged;
+                isr.OverwriteUnmanagedCustomizations = (oneTimeSettings ?? settings).OverwriteUnmanagedCustomizations;
+                isr.PublishWorkflows = (oneTimeSettings ?? settings).PublishWorkflows;
                 isr.ImportJobId = Guid.NewGuid();
 
                 if (ConnectionDetail.OrganizationMajorVersion >= 8)
                 {
-                    isr.HoldingSolution = settings.ImportMode == ImportModeEnum.StageForUpgrade && !isPatch;
-                    isr.SkipProductUpdateDependencies = settings.SkipProductUpdateDependencies;
+                    isr.HoldingSolution = (oneTimeSettings ?? settings).ImportMode == ImportModeEnum.StageForUpgrade && !isPatch;
+                    isr.SkipProductUpdateDependencies = (oneTimeSettings ?? settings).SkipProductUpdateDependencies;
                 }
             }
             else if (request is StageAndUpgradeRequest saur)
             {
-                saur.ConvertToManaged = settings.ConvertToManaged;
-                saur.OverwriteUnmanagedCustomizations = settings.OverwriteUnmanagedCustomizations;
-                saur.PublishWorkflows = settings.PublishWorkflows;
+                saur.ConvertToManaged = (oneTimeSettings ?? settings).ConvertToManaged;
+                saur.OverwriteUnmanagedCustomizations = (oneTimeSettings ?? settings).OverwriteUnmanagedCustomizations;
+                saur.PublishWorkflows = (oneTimeSettings ?? settings).PublishWorkflows;
                 saur.ImportJobId = Guid.NewGuid();
 
                 if (ConnectionDetail.OrganizationMajorVersion >= 8)
                 {
-                    saur.SkipProductUpdateDependencies = settings.SkipProductUpdateDependencies;
+                    saur.SkipProductUpdateDependencies = (oneTimeSettings ?? settings).SkipProductUpdateDependencies;
                 }
             }
 
@@ -590,12 +619,12 @@ Would you like to open the file now ({e.Result})?
 
         private void StartExport(ExportToProcess etp)
         {
-            if (settings.AutoExportSolutionsToDisk)
+            if ((oneTimeSettings ?? settings).AutoExportSolutionsToDisk)
             {
-                if (!Directory.Exists(settings.AutoExportSolutionsFolderPath))
+                if (!Directory.Exists((oneTimeSettings ?? settings).AutoExportSolutionsFolderPath))
                 {
                     MessageBox.Show(this,
-                        $@"Folder {settings.AutoExportSolutionsFolderPath} does not exist! Please update settings",
+                        $@"Folder {(oneTimeSettings ?? settings).AutoExportSolutionsFolderPath} does not exist! Please update settings",
                         @"Warning",
                         MessageBoxButtons.OK,
                         MessageBoxIcon.Warning);
@@ -611,7 +640,7 @@ Would you like to open the file now ({e.Result})?
             progressItems[etp.Request].SolutionVersion = etp.Solution.GetAttributeValue<string>("version");
             progressItems[etp.Request].Start();
 
-            if (settings.ExportAsynchronously)
+            if ((oneTimeSettings ?? settings).ExportAsynchronously)
             {
                 var request2 = new OrganizationRequest("ExportSolutionAsync");
                 request2.Parameters = etp.Request.Parameters;
@@ -657,10 +686,10 @@ Would you like to open the file now ({e.Result})?
                         progressItems[etp.Request].SolutionFile = etp.SolutionContent;
                     }
 
-                    if (settings.AutoExportSolutionsToDisk)
+                    if ((oneTimeSettings ?? settings).AutoExportSolutionsToDisk)
                     {
                         var fileName = progressItems[etp.Request].SolutionFileName;
-                        var filePath = Path.Combine(settings.AutoExportSolutionsFolderPath, fileName);
+                        var filePath = Path.Combine((oneTimeSettings ?? settings).AutoExportSolutionsFolderPath, fileName);
                         try
                         {
                             File.WriteAllBytes(filePath, etp.SolutionContent);
@@ -714,7 +743,7 @@ Would you like to open the file now ({e.Result})?
                 {
                     StartExport(etp);
                 }
-                else if (etp.IsProcessing && settings.ExportAsynchronously)
+                else if (etp.IsProcessing && (oneTimeSettings ?? settings).ExportAsynchronously)
                 {
                     var task = etp.Detail.GetCrmServiceClient().RetrieveMultiple(new QueryExpression("asyncoperation")
                     {
@@ -769,10 +798,10 @@ Would you like to open the file now ({e.Result})?
 
                                 etp.Succeeded = true;
 
-                                if (settings.AutoExportSolutionsToDisk || etp.IsSolutionDownload)
+                                if ((oneTimeSettings ?? settings).AutoExportSolutionsToDisk || etp.IsSolutionDownload)
                                 {
                                     var fileName = progressItems[etp.Request].SolutionFileName;
-                                    var filePath = Path.Combine(settings.AutoExportSolutionsFolderPath, fileName);
+                                    var filePath = Path.Combine((oneTimeSettings ?? settings).AutoExportSolutionsFolderPath, fileName);
                                     try
                                     {
                                         File.WriteAllBytes(filePath, etp.SolutionContent);
@@ -1015,7 +1044,7 @@ Would you like to open the file now ({e.Result})?
             ToggleWaitMode(true);
 
             timer.Elapsed += Timer_Elapsed;
-            timer.Interval = settings.RefreshIntervalProp.TotalMilliseconds;
+            timer.Interval = (oneTimeSettings ?? settings).RefreshIntervalProp.TotalMilliseconds;
             timer.Start();
         }
 
@@ -1025,7 +1054,7 @@ Would you like to open the file now ({e.Result})?
             {
                 if (on)
                 {
-                    tsbTransfertSolution.Enabled = false;
+                    tssbTransfer.Enabled = false;
                     tsbLoadSolutions.Enabled = false;
                     tsbFindMissingDependencies.Enabled = false;
                     tsbSwitchOrgs.Enabled = false;
@@ -1036,7 +1065,7 @@ Would you like to open the file now ({e.Result})?
                 else
                 {
                     tsbDownload.Enabled = true;
-                    tsbTransfertSolution.Enabled = true;
+                    tssbTransfer.Enabled = true;
                     tsbLoadSolutions.Enabled = true;
                     tsbFindMissingDependencies.Enabled = lastImportId != Guid.Empty;
                     tsbSwitchOrgs.Enabled = true;
@@ -1064,7 +1093,7 @@ Would you like to open the file now ({e.Result})?
 
             var path = "";
 
-            if (string.IsNullOrEmpty(settings.AutoExportSolutionsFolderPath))
+            if (string.IsNullOrEmpty((oneTimeSettings ?? settings).AutoExportSolutionsFolderPath))
             {
                 var dialog = new CustomFolderBrowserDialog();
                 if (dialog.ShowDialog(this) != DialogResult.OK)
@@ -1077,7 +1106,7 @@ Would you like to open the file now ({e.Result})?
 
             var solutions = mForm.SelectedSolutions;
 
-            if (settings.ExportAsynchronously)
+            if ((oneTimeSettings ?? settings).ExportAsynchronously)
             {
                 progressItems = new Dictionary<OrganizationRequest, ProgressItem>();
                 toProcessList = new List<BaseToProcess>();
