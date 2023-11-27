@@ -5,6 +5,7 @@ using Microsoft.Crm.Sdk.Messages;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Client;
 using Microsoft.Xrm.Sdk.Messages;
+using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Query;
 using Microsoft.Xrm.Sdk.WebServiceClient;
 using System;
@@ -32,10 +33,12 @@ namespace DamSim.SolutionTransferTool
         private string lastConnectionName;
         private Guid lastImportId;
         private IOrganizationService lastTargetService;
+        private MissingComponentsControl mcControl;
         private Settings oneTimeSettings;
         private Dictionary<OrganizationRequest, ProgressItem> progressItems;
         private Settings settings;
         private SettingsForm sForm;
+        private Dictionary<int, string> solutionComponentTypes = new Dictionary<int, string>();
         private ConnectionDetail sourceDetail;
         private IOrganizationService sourceService;
         private System.Timers.Timer timer = new System.Timers.Timer();
@@ -614,6 +617,30 @@ Would you like to open the file now ({e.Result})?
 
             var solutions = sourceService.RetrieveMultiple(sourceSolutionsQuery);
 
+            var solutionComponentsQuery = new QueryExpression
+            {
+                EntityName = "solutioncomponentdefinition",
+                ColumnSet = new ColumnSet("name", "solutioncomponenttype"),
+            };
+
+            foreach (var def in sourceService.RetrieveMultiple(solutionComponentsQuery).Entities)
+            {
+                solutionComponentTypes.Add(def.GetAttributeValue<int>("solutioncomponenttype"), def.GetAttributeValue<string>("name"));
+            }
+
+            var opt = (RetrieveOptionSetResponse)sourceService.Execute(new RetrieveOptionSetRequest
+            {
+                Name = "componenttype"
+            });
+
+            foreach (var op in ((OptionSetMetadata)opt.OptionSetMetadata).Options)
+            {
+                if (!solutionComponentTypes.ContainsKey(op.Value.Value))
+                {
+                    solutionComponentTypes.Add(op.Value.Value, op.Label.UserLocalizedLabel.Label);
+                }
+            }
+
             mForm.DisplaySolutions(solutions.Entities.ToList());
         }
 
@@ -846,162 +873,198 @@ Would you like to open the file now ({e.Result})?
                         }
                     }
                 }
+            }
 
-                foreach (var itp in toProcessList.OfType<ImportToProcess>()
-                    .Where(i => i.Export == etp && i.Export.IsProcessed && i.Export.Succeeded))
+            foreach (var itp in toProcessList.OfType<ImportToProcess>()
+                    .Where(i => /*i.Export == etp && */i.Export.IsProcessed && i.Export.Succeeded))
+            {
+                if (itp.Previous != null && !itp.Previous.IsProcessed || itp.IsProcessed)
                 {
-                    if (itp.Previous != null && !itp.Previous.IsProcessed || itp.IsProcessed)
+                    continue;
+                }
+
+                if (!itp.IsProcessing && !itp.IsProcessed)
+                {
+                    itp.StartedOn = DateTime.Now;
+                    progressItems[itp.Request].Solution = itp.Solution.GetAttributeValue<string>("friendlyname");
+                    progressItems[itp.Request].Start();
+                    itp.IsProcessing = true;
+
+                    if ((oneTimeSettings ?? settings).CheckForMissingDependencies)
                     {
-                        continue;
+                        RetrieveMissingComponentsResponse response = (RetrieveMissingComponentsResponse)itp.Detail.GetCrmServiceClient().Execute(new RetrieveMissingComponentsRequest
+                        {
+                            CustomizationFile = itp.Export.SolutionContent
+                        });
+
+                        if (response.MissingComponents != null && response.MissingComponents.Any())
+                        {
+                            if (mcControl == null)
+                            {
+                                mcControl = new MissingComponentsControl();
+                                mcControl.Name = "MissingComponentsControl1";
+                                mcControl.OnClose += (s, evt) => { Controls.Remove(mcControl); };
+                            }
+
+                            Invoke(new Action(() =>
+                             {
+                                 mcControl.ComponentsTypes = solutionComponentTypes;
+                                 mcControl.Components = response.MissingComponents;
+                                 mcControl.ShowData();
+                                 Controls.Add(mcControl);
+                                 mcControl.DisplayCentered();
+                                 mcControl.BringToFront();
+                             }));
+
+                            progressItems[itp.Request].Error(DateTime.Now, "Your solution has missing components in the target environment");
+                            itp.IsProcessing = false;
+                            ToggleWaitMode(false);
+                            timer.Stop();
+                            pForm.ShowRetryButton(progressItems[itp.Request]);
+
+                            return;
+                        }
                     }
 
-                    if (!itp.IsProcessing && !itp.IsProcessed)
+                    if (itp.Request is ImportSolutionRequest isr)
                     {
-                        itp.StartedOn = DateTime.Now;
-                        progressItems[itp.Request].Solution = itp.Solution.GetAttributeValue<string>("friendlyname");
-                        progressItems[itp.Request].Start();
-                        itp.IsProcessing = true;
-
-                        if (itp.Request is ImportSolutionRequest isr)
-                        {
-                            isr.CustomizationFile = itp.Export.SolutionContent;
-                        }
-                        else if (itp.Request is StageAndUpgradeRequest saur)
-                        {
-                            saur.CustomizationFile = itp.Export.SolutionContent;
-                        }
-
-                        itp.AsyncOperationId = ((ExecuteAsyncResponse)itp.Detail.GetCrmServiceClient().Execute(new ExecuteAsyncRequest
-                        {
-                            Request = itp.Request
-                        })).AsyncJobId;
-
-                        lastImportId = ((ImportSolutionRequest)itp.Request).ImportJobId;
+                        isr.CustomizationFile = itp.Export.SolutionContent;
                     }
-                    else if (itp.IsProcessing)
+                    else if (itp.Request is StageAndUpgradeRequest saur)
                     {
-                        var task = itp.Detail.GetCrmServiceClient().RetrieveMultiple(new QueryExpression("asyncoperation")
-                        {
-                            NoLock = true,
-                            ColumnSet = new ColumnSet(true),
-                            Criteria =
+                        saur.CustomizationFile = itp.Export.SolutionContent;
+                    }
+
+                    itp.AsyncOperationId = ((ExecuteAsyncResponse)itp.Detail.GetCrmServiceClient().Execute(new ExecuteAsyncRequest
+                    {
+                        Request = itp.Request
+                    })).AsyncJobId;
+
+                    lastImportId = ((ImportSolutionRequest)itp.Request).ImportJobId;
+                }
+                else if (itp.IsProcessing)
+                {
+                    var task = itp.Detail.GetCrmServiceClient().RetrieveMultiple(new QueryExpression("asyncoperation")
+                    {
+                        NoLock = true,
+                        ColumnSet = new ColumnSet(true),
+                        Criteria =
                                 {
                                     Conditions=
                                     {
                                         new ConditionExpression("asyncoperationid", ConditionOperator.Equal, itp.AsyncOperationId)
                                     }
                                 }
-                        }).Entities.FirstOrDefault();
+                    }).Entities.FirstOrDefault();
 
-                        if (task != null)
+                    if (task != null)
+                    {
+                        if (task.GetAttributeValue<OptionSetValue>("statecode")?.Value == 3)
                         {
-                            if (task.GetAttributeValue<OptionSetValue>("statecode")?.Value == 3)
+                            itp.IsProcessed = true;
+                            itp.IsProcessing = false;
+                            itp.CompletedOn = DateTime.Now;
+                            if (task.GetAttributeValue<OptionSetValue>("statuscode")?.Value == 30)
                             {
-                                itp.IsProcessed = true;
-                                itp.IsProcessing = false;
-                                itp.CompletedOn = DateTime.Now;
-                                if (task.GetAttributeValue<OptionSetValue>("statuscode")?.Value == 30)
-                                {
-                                    progressItems[itp.Request].Success(itp);
-                                    itp.Succeeded = true;
-                                }
-                                else
-                                {
-                                    progressItems[itp.Request].Error(task.GetAttributeValue<DateTime>("completedon").ToLocalTime());
-                                    ToggleWaitMode(false);
-                                    timer.Stop();
-                                    pForm.ShowRetryButton(progressItems[itp.Request]);
-                                }
-
-                                if (toProcessList.All(tp => tp.IsProcessed))
-                                {
-                                    timer.Stop();
-                                    ToggleWaitMode(false);
-                                }
+                                progressItems[itp.Request].Success(itp);
+                                itp.Succeeded = true;
                             }
                             else
                             {
-                                Guid importJobId = Guid.Empty;
-                                if (itp.Request is ImportSolutionRequest isr)
-                                {
-                                    importJobId = isr.ImportJobId;
-                                }
-                                else if (itp.Request is StageAndUpgradeRequest saur)
-                                {
-                                    importJobId = saur.ImportJobId;
-                                }
+                                progressItems[itp.Request].Error(task.GetAttributeValue<DateTime>("completedon").ToLocalTime());
+                                ToggleWaitMode(false);
+                                timer.Stop();
+                                pForm.ShowRetryButton(progressItems[itp.Request]);
+                            }
 
-                                var job = itp.Detail.GetCrmServiceClient().RetrieveMultiple(new QueryExpression("importjob")
-                                {
-                                    NoLock = true,
-                                    ColumnSet = new ColumnSet(true),
-                                    Criteria =
+                            if (toProcessList.All(tp => tp.IsProcessed))
+                            {
+                                timer.Stop();
+                                ToggleWaitMode(false);
+                            }
+                        }
+                        else
+                        {
+                            Guid importJobId = Guid.Empty;
+                            if (itp.Request is ImportSolutionRequest isr)
+                            {
+                                importJobId = isr.ImportJobId;
+                            }
+                            else if (itp.Request is StageAndUpgradeRequest saur)
+                            {
+                                importJobId = saur.ImportJobId;
+                            }
+
+                            var job = itp.Detail.GetCrmServiceClient().RetrieveMultiple(new QueryExpression("importjob")
+                            {
+                                NoLock = true,
+                                ColumnSet = new ColumnSet(true),
+                                Criteria =
                                     {
                                         Conditions=
                                         {
                                             new ConditionExpression("importjobid", ConditionOperator.Equal, importJobId)
                                         }
                                     }
-                                }).Entities.FirstOrDefault();
+                            }).Entities.FirstOrDefault();
 
-                                if (job != null)
-                                {
-                                    progressItems[itp.Request]
-                                        .ReportProgress(job.GetAttributeValue<double>("progress"), itp, job.GetAttributeValue<string>("operationcontext") == "Upgrade");
-                                }
+                            if (job != null)
+                            {
+                                progressItems[itp.Request]
+                                    .ReportProgress(job.GetAttributeValue<double>("progress"), itp, job.GetAttributeValue<string>("operationcontext") == "Upgrade");
                             }
                         }
                     }
                 }
+            }
 
-                foreach (var ptp in toProcessList.OfType<PublishToProcess>())
+            foreach (var ptp in toProcessList.OfType<PublishToProcess>())
+            {
+                if (toProcessList.OfType<ImportToProcess>()
+                        .Where(i => i.Detail == ptp.Detail)
+                        .All(i => i.Succeeded)
+                    && !ptp.IsProcessed && !ptp.IsProcessing)
                 {
-                    if (toProcessList.OfType<ImportToProcess>()
-                            .Where(i => i.Detail == ptp.Detail)
-                            .All(i => i.Succeeded)
-                        && !ptp.IsProcessed && !ptp.IsProcessing)
-                    {
-                        ptp.StartedOn = DateTime.Now;
-                        progressItems[ptp.Request].Start();
+                    ptp.StartedOn = DateTime.Now;
+                    progressItems[ptp.Request].Start();
 
-                        WorkAsync(new WorkAsyncInfo
+                    WorkAsync(new WorkAsyncInfo
+                    {
+                        Message = "",
+                        Work = (bw, evt) =>
                         {
-                            Message = "",
-                            Work = (bw, evt) =>
+                            ptp.IsProcessing = true;
+                            ptp.Detail.GetCrmServiceClient().Execute(ptp.Request);
+                            ptp.IsProcessed = true;
+                            ptp.IsProcessing = false;
+                        },
+                        PostWorkCallBack = evt =>
+                        {
+                            if (evt.Error != null)
+                                progressItems[ptp.Request].Error(DateTime.Now);
+                            else
                             {
-                                ptp.IsProcessing = true;
-                                ptp.Detail.GetCrmServiceClient().Execute(ptp.Request);
-                                ptp.IsProcessed = true;
-                                ptp.IsProcessing = false;
-                            },
-                            PostWorkCallBack = evt =>
-                            {
-                                if (evt.Error != null)
-                                    progressItems[ptp.Request].Error(DateTime.Now);
-                                else
-                                {
-                                    ptp.CompletedOn = DateTime.Now;
-                                    progressItems[ptp.Request].Success(ptp);
-                                }
-
-                                if (toProcessList.All(tp => tp.IsProcessed))
-                                {
-                                    timer.Stop();
-                                    ToggleWaitMode(false);
-                                }
+                                ptp.CompletedOn = DateTime.Now;
+                                progressItems[ptp.Request].Success(ptp);
                             }
-                        });
-                    }
 
-                    if (toProcessList.OfType<ImportToProcess>()
-                           .Where(i => i.Detail == ptp.Detail)
-                           .Any(i => i.IsProcessed && !i.Succeeded)
-                       && !ptp.IsProcessed)
-                    {
-                        progressItems[ptp.Request].Error(DateTime.Now);
-                        timer.Stop();
-                        ToggleWaitMode(false);
-                    }
+                            if (toProcessList.All(tp => tp.IsProcessed))
+                            {
+                                timer.Stop();
+                                ToggleWaitMode(false);
+                            }
+                        }
+                    });
+                }
+
+                if (toProcessList.OfType<ImportToProcess>()
+                       .Where(i => i.Detail == ptp.Detail)
+                       .Any(i => i.IsProcessed && !i.Succeeded)
+                   && !ptp.IsProcessed)
+                {
+                    progressItems[ptp.Request].Error(DateTime.Now);
+                    timer.Stop();
+                    ToggleWaitMode(false);
                 }
             }
         }
@@ -1046,6 +1109,26 @@ Would you like to open the file now ({e.Result})?
             timer.Elapsed += Timer_Elapsed;
             timer.Interval = (oneTimeSettings ?? settings).RefreshIntervalProp.TotalMilliseconds;
             timer.Start();
+        }
+
+        private void SolutionTransferTool_Resize(object sender, EventArgs e)
+        {
+            var control = Controls.Find("MissingComponentsControl1", true);
+            if (control.Length == 1)
+            {
+                if (((MissingComponentsControl)control[0]).IsMaximized)
+                {
+                    control[0].Width = Width;
+                    control[0].Height = Height;
+                    control[0].Location = new System.Drawing.Point(0, 0);
+                }
+                else
+                {
+                    control[0].Width = Convert.ToInt32(Width * 0.7);
+                    control[0].Height = Convert.ToInt32(Height * 0.7);
+                    control[0].Location = new System.Drawing.Point(Width / 2 - control[0].Width / 2, Height / 2 - control[0].Height / 2);
+                }
+            }
         }
 
         private void ToggleWaitMode(bool on)

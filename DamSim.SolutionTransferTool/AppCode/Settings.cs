@@ -67,6 +67,11 @@ namespace DamSim.SolutionTransferTool.AppCode
         public bool AutoExportSolutionsToDisk { get; set; }
 
         [Category("Import Settings")]
+        [DisplayName("Check for missing dependencies")]
+        [Description("Checks the missing dependencies in target environment before trying to import the solution")]
+        public bool CheckForMissingDependencies { get; set; }
+
+        [Category("Import Settings")]
         [DisplayName("Convert to managed")]
         [Description("Direct the system to convert any matching unmanaged customizations into your managed solution")]
         public bool ConvertToManaged { get; set; }
@@ -202,6 +207,7 @@ Upgrade: Install a new version of the solution and remove missing components")]
             {
                 AutoExportSolutionsFolderPath = AutoExportSolutionsFolderPath,
                 AutoExportSolutionsToDisk = AutoExportSolutionsToDisk,
+                CheckForMissingDependencies = CheckForMissingDependencies,
                 ConvertToManaged = ConvertToManaged,
                 ExportAsynchronously = ExportAsynchronously,
                 ExportAutoNumberingSettings = ExportAutoNumberingSettings,
