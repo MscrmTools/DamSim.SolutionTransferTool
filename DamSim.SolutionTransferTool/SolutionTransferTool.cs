@@ -623,9 +623,20 @@ Would you like to open the file now ({e.Result})?
                 ColumnSet = new ColumnSet("name", "solutioncomponenttype"),
             };
 
+            solutionComponentTypes = new Dictionary<int, string> ();
+
             foreach (var def in sourceService.RetrieveMultiple(solutionComponentsQuery).Entities)
             {
-                solutionComponentTypes.Add(def.GetAttributeValue<int>("solutioncomponenttype"), def.GetAttributeValue<string>("name"));
+                var compDef = def.GetAttributeValue<int>("solutioncomponenttype");
+
+                if (!solutionComponentTypes.ContainsKey(compDef))
+                {
+                    solutionComponentTypes.Add(compDef, def.GetAttributeValue<string>("name"));
+                }
+                else
+                {
+                    solutionComponentTypes[compDef] = def.GetAttributeValue<string>("name");
+                }
             }
 
             var opt = (RetrieveOptionSetResponse)sourceService.Execute(new RetrieveOptionSetRequest
@@ -638,6 +649,10 @@ Would you like to open the file now ({e.Result})?
                 if (!solutionComponentTypes.ContainsKey(op.Value.Value))
                 {
                     solutionComponentTypes.Add(op.Value.Value, op.Label.UserLocalizedLabel.Label);
+                }
+                else
+                {
+                    solutionComponentTypes[op.Value.Value] = op.Label.UserLocalizedLabel.Label;
                 }
             }
 
