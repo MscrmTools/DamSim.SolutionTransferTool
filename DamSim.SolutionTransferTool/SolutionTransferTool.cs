@@ -623,7 +623,7 @@ Would you like to open the file now ({e.Result})?
                 ColumnSet = new ColumnSet("name", "solutioncomponenttype"),
             };
 
-            solutionComponentTypes = new Dictionary<int, string> ();
+            solutionComponentTypes = new Dictionary<int, string>();
 
             foreach (var def in sourceService.RetrieveMultiple(solutionComponentsQuery).Entities)
             {
@@ -646,13 +646,14 @@ Would you like to open the file now ({e.Result})?
 
             foreach (var op in ((OptionSetMetadata)opt.OptionSetMetadata).Options)
             {
+                var label = op.Label.UserLocalizedLabel?.Label ?? op.Label.LocalizedLabels.FirstOrDefault(l => l.LanguageCode == 1033)?.Label ?? op.Label.LocalizedLabels[0].Label;
                 if (!solutionComponentTypes.ContainsKey(op.Value.Value))
                 {
-                    solutionComponentTypes.Add(op.Value.Value, op.Label.UserLocalizedLabel.Label);
+                    solutionComponentTypes.Add(op.Value.Value, label);
                 }
                 else
                 {
-                    solutionComponentTypes[op.Value.Value] = op.Label.UserLocalizedLabel.Label;
+                    solutionComponentTypes[op.Value.Value] = label;
                 }
             }
 
