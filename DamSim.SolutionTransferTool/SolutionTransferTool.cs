@@ -729,6 +729,11 @@ Would you like to open the file now ({e.Result})?
                         progressItems[etp.Request].SolutionFile = etp.SolutionContent;
                     }
 
+                    if (toProcessList.All(p => p.IsProcessed))
+                    {
+                        ToggleWaitMode(false);
+                    }
+
                     if ((oneTimeSettings ?? settings).AutoExportSolutionsToDisk)
                     {
                         var fileName = progressItems[etp.Request].SolutionFileName;
@@ -840,6 +845,12 @@ Would you like to open the file now ({e.Result})?
                                 progressItems[etp.Request].SolutionFile = downloaded;
 
                                 etp.Succeeded = true;
+
+                                if (toProcessList.All(tp => tp.IsProcessed))
+                                {
+                                    timer.Stop();
+                                    ToggleWaitMode(false);
+                                }
 
                                 if ((oneTimeSettings ?? settings).AutoExportSolutionsToDisk || etp.IsSolutionDownload)
                                 {
@@ -1192,7 +1203,7 @@ Would you like to open the file now ({e.Result})?
 
             var path = "";
 
-            if (string.IsNullOrEmpty((oneTimeSettings ?? settings).AutoExportSolutionsFolderPath))
+            if ((oneTimeSettings ?? settings).AutoExportSolutionsToDisk && string.IsNullOrEmpty((oneTimeSettings ?? settings).AutoExportSolutionsFolderPath))
             {
                 var dialog = new CustomFolderBrowserDialog();
                 if (dialog.ShowDialog(this) != DialogResult.OK)
@@ -1235,6 +1246,17 @@ Would you like to open the file now ({e.Result})?
                 timer.Start();
 
                 return;
+            }
+
+            if (string.IsNullOrEmpty((oneTimeSettings ?? settings).AutoExportSolutionsFolderPath))
+            {
+                var dialog = new CustomFolderBrowserDialog();
+                if (dialog.ShowDialog(this) != DialogResult.OK)
+                {
+                    return;
+                }
+
+                path = dialog.FolderPath;
             }
 
             WorkAsync(new WorkAsyncInfo
