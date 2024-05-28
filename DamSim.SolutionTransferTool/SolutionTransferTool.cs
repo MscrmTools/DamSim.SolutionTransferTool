@@ -814,35 +814,16 @@ Would you like to open the file now ({e.Result})?
                             etp.IsProcessing = false;
                             if (task.GetAttributeValue<OptionSetValue>("statuscode")?.Value == 30)
                             {
-                                var exportRecord = Service.Retrieve("exportsolutionupload", etp.ExportJobId, new ColumnSet("solutionfile"));
+                                var req = new OrganizationRequest("DownloadSolutionExportData");
+                                req.Parameters.Add("ExportJobId", etp.ExportJobId);
+                                var response = Service.Execute(req);
 
-                                var initRequest = new InitializeFileBlocksDownloadRequest() { FileAttributeName = "solutionfile", Target = exportRecord.ToEntityReference() };
-                                var initResponse = (InitializeFileBlocksDownloadResponse)Service.Execute(initRequest);
-
-                                var increment = 4194304;
-                                var from = 0;
-                                var fileSize = initResponse.FileSizeInBytes;
-                                byte[] downloaded = new byte[fileSize];
-                                var fileContinuationToken = initResponse.FileContinuationToken;
-
-                                while (from < fileSize)
-                                {
-                                    var blockRequest = new DownloadBlockRequest()
-                                    {
-                                        Offset = from,
-                                        BlockLength = increment,
-                                        FileContinuationToken = fileContinuationToken
-                                    };
-                                    var blockResponse = (DownloadBlockResponse)Service.Execute(blockRequest);
-                                    blockResponse.Data.CopyTo(downloaded, from);
-                                    from += increment;
-                                }
-
-                                etp.SolutionContent = downloaded;
+                                etp.SolutionContent = (byte[])response["ExportSolutionFile"];
                                 etp.CompletedOn = DateTime.Now;
 
                                 progressItems[etp.Request].Success(etp);
-                                progressItems[etp.Request].SolutionFile = downloaded;
+
+                                progressItems[etp.Request].SolutionFile = etp.SolutionContent;
 
                                 etp.Succeeded = true;
 
