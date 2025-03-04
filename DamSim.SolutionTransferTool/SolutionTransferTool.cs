@@ -623,37 +623,40 @@ Would you like to open the file now ({e.Result})?
                 ColumnSet = new ColumnSet("name", "solutioncomponenttype"),
             };
 
-            solutionComponentTypes = new Dictionary<int, string>();
-
-            foreach (var def in sourceService.RetrieveMultiple(solutionComponentsQuery).Entities)
+            if (ConnectionDetail.OrganizationMajorVersion > 8)
             {
-                var compDef = def.GetAttributeValue<int>("solutioncomponenttype");
+                solutionComponentTypes = new Dictionary<int, string>();
 
-                if (!solutionComponentTypes.ContainsKey(compDef))
+                foreach (var def in sourceService.RetrieveMultiple(solutionComponentsQuery).Entities)
                 {
-                    solutionComponentTypes.Add(compDef, def.GetAttributeValue<string>("name"));
-                }
-                else
-                {
-                    solutionComponentTypes[compDef] = def.GetAttributeValue<string>("name");
-                }
-            }
+                    var compDef = def.GetAttributeValue<int>("solutioncomponenttype");
 
-            var opt = (RetrieveOptionSetResponse)sourceService.Execute(new RetrieveOptionSetRequest
-            {
-                Name = "componenttype"
-            });
-
-            foreach (var op in ((OptionSetMetadata)opt.OptionSetMetadata).Options)
-            {
-                var label = op.Label.UserLocalizedLabel?.Label ?? op.Label.LocalizedLabels.FirstOrDefault(l => l.LanguageCode == 1033)?.Label ?? op.Label.LocalizedLabels[0].Label;
-                if (!solutionComponentTypes.ContainsKey(op.Value.Value))
-                {
-                    solutionComponentTypes.Add(op.Value.Value, label);
+                    if (!solutionComponentTypes.ContainsKey(compDef))
+                    {
+                        solutionComponentTypes.Add(compDef, def.GetAttributeValue<string>("name"));
+                    }
+                    else
+                    {
+                        solutionComponentTypes[compDef] = def.GetAttributeValue<string>("name");
+                    }
                 }
-                else
+
+                var opt = (RetrieveOptionSetResponse)sourceService.Execute(new RetrieveOptionSetRequest
                 {
-                    solutionComponentTypes[op.Value.Value] = label;
+                    Name = "componenttype"
+                });
+
+                foreach (var op in ((OptionSetMetadata)opt.OptionSetMetadata).Options)
+                {
+                    var label = op.Label.UserLocalizedLabel?.Label ?? op.Label.LocalizedLabels.FirstOrDefault(l => l.LanguageCode == 1033)?.Label ?? op.Label.LocalizedLabels[0].Label;
+                    if (!solutionComponentTypes.ContainsKey(op.Value.Value))
+                    {
+                        solutionComponentTypes.Add(op.Value.Value, label);
+                    }
+                    else
+                    {
+                        solutionComponentTypes[op.Value.Value] = label;
+                    }
                 }
             }
 
