@@ -898,11 +898,12 @@ Would you like to open the file now ({e.Result})?
                 {
                     itp.StartedOn = DateTime.Now;
                     progressItems[itp.Request].Solution = itp.Solution.GetAttributeValue<string>("friendlyname");
-                    progressItems[itp.Request].Start();
                     itp.IsProcessing = true;
 
-                    if ((oneTimeSettings ?? settings).CheckForMissingDependencies)
+                    if ((oneTimeSettings ?? settings).CheckForMissingDependencies && ConnectionDetail.OrganizationMajorVersion > 8)
                     {
+                        progressItems[itp.Request].CheckDependencies();
+
                         RetrieveMissingComponentsResponse response = (RetrieveMissingComponentsResponse)itp.Detail.GetCrmServiceClient().Execute(new RetrieveMissingComponentsRequest
                         {
                             CustomizationFile = itp.Export.SolutionContent
@@ -936,6 +937,8 @@ Would you like to open the file now ({e.Result})?
                             return;
                         }
                     }
+
+                    progressItems[itp.Request].Start();
 
                     if (itp.Request is ImportSolutionRequest isr)
                     {

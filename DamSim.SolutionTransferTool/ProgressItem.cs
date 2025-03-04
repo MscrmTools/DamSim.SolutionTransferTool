@@ -28,6 +28,20 @@ namespace DamSim.SolutionTransferTool
         public string SolutionVersion { get; set; }
         public Enumerations.RequestType Type { get; set; }
 
+        public void CheckDependencies()
+        {
+            Invoke(new Action(() =>
+            {
+                pnlProgress.Visible = true;
+                lblProgress.Text = string.Format(lblProgress.Tag.ToString(), DateTime.Now.ToString("G"));
+                pbProgress.Image = ilProgress.Images[1];
+                lblPercentage.Visible = false;
+                lblAction.Text = "Dependencies check";
+                lblDirection.Text = $@"On organization {Detail.ConnectionName}";
+                pbProgress.Image = ilProgress.Images[5];
+            }));
+        }
+
         public void Error(DateTime date, string errorMessage = null)
         {
             Invoke(new Action(() =>
@@ -51,6 +65,8 @@ namespace DamSim.SolutionTransferTool
                 lblProgress.Text = string.Format(lblProgress.Tag.ToString(), DateTime.Now.ToString("G"));
                 pbProgress.Image = ilProgress.Images[1];
                 lblPercentage.Visible = Request is ImportSolutionRequest || Request is StageAndUpgradeRequest;
+
+                ProgressItem_Load(this, null);
             }));
         }
 
