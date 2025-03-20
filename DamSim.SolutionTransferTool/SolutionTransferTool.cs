@@ -14,6 +14,7 @@ using System.Collections.Specialized;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.ServiceModel;
 using System.Windows.Forms;
 using WeifenLuo.WinFormsUI.Docking;
 using XrmToolBox.Extensibility;
@@ -434,6 +435,20 @@ Would you like to open the file now ({e.Result})?
         private string GetUpdatedSolutionVersion(Entity etpSolution)
         {
             string version = etpSolution.GetAttributeValue<string>("version");
+
+            if ((oneTimeSettings?.VersionSchema ?? settings.VersionSchema) == VersionType.Date)
+            {
+                int i = 0;
+                var newVersion = DateTime.Now.ToString(oneTimeSettings?.VersionDateMask ?? settings.VersionDateMask).Replace("x", i.ToString());
+                while (new Version(newVersion) <= new Version(version))
+                {
+                    i++;
+                    newVersion = DateTime.Now.ToString(oneTimeSettings?.VersionDateMask ?? settings.VersionDateMask).Replace("x", i.ToString());
+                }
+
+                return newVersion;
+            }
+
             var versionParts = version.Split('.');
             switch (oneTimeSettings?.VersionSchema ?? settings.VersionSchema)
             {
@@ -904,37 +919,56 @@ Would you like to open the file now ({e.Result})?
                     {
                         progressItems[itp.Request].CheckDependencies();
 
-                        RetrieveMissingComponentsResponse response = (RetrieveMissingComponentsResponse)itp.Detail.GetCrmServiceClient().Execute(new RetrieveMissingComponentsRequest
+                        try
                         {
-                            CustomizationFile = itp.Export.SolutionContent
-                        });
-
-                        if (response.MissingComponents != null && response.MissingComponents.Any())
-                        {
-                            if (mcControl == null)
+                            RetrieveMissingComponentsResponse response = (RetrieveMissingComponentsResponse)itp.Detail.GetCrmServiceClient().Execute(new RetrieveMissingComponentsRequest
                             {
-                                mcControl = new MissingComponentsControl();
-                                mcControl.Name = "MissingComponentsControl1";
-                                mcControl.OnClose += (s, evt) => { Controls.Remove(mcControl); };
+                                CustomizationFile = itp.Export.SolutionContent
+                            });
+
+                            if (response.MissingComponents != null && response.MissingComponents.Any())
+                            {
+                                if (mcControl == null)
+                                {
+                                    mcControl = new MissingComponentsControl();
+                                    mcControl.Name = "MissingComponentsControl1";
+                                    mcControl.OnClose += (s, evt) => { Controls.Remove(mcControl); };
+                                }
+
+                                Invoke(new Action(() =>
+                                {
+                                    mcControl.ComponentsTypes = solutionComponentTypes;
+                                    mcControl.Components = response.MissingComponents;
+                                    mcControl.ShowData();
+                                    Controls.Add(mcControl);
+                                    mcControl.DisplayCentered();
+                                    mcControl.BringToFront();
+                                }));
+
+                                progressItems[itp.Request].Error(DateTime.Now, "Your solution has missing components in the target environment");
+                                itp.IsProcessing = false;
+                                ToggleWaitMode(false);
+                                timer.Stop();
+                                pForm.ShowRetryButton(progressItems[itp.Request]);
+
+                                return;
                             }
-
+                        }
+                        catch (Exception error)
+                        {
                             Invoke(new Action(() =>
-                             {
-                                 mcControl.ComponentsTypes = solutionComponentTypes;
-                                 mcControl.Components = response.MissingComponents;
-                                 mcControl.ShowData();
-                                 Controls.Add(mcControl);
-                                 mcControl.DisplayCentered();
-                                 mcControl.BringToFront();
-                             }));
+                            {
+                                if (MessageBox.Show(this, $"An error when checking for missing components:\n\n{error.Message}", "Error", MessageBoxButtons.YesNo, MessageBoxIcon.Error) == DialogResult.No)
+                                {
+                                    progressItems[itp.Request].Error(DateTime.Now, "An error when checking for missing components");
+                                    itp.IsProcessing = false;
+                                    ToggleWaitMode(false);
+                                    timer.Stop();
+                                    pForm.ShowRetryButton(progressItems[itp.Request]);
 
-                            progressItems[itp.Request].Error(DateTime.Now, "Your solution has missing components in the target environment");
-                            itp.IsProcessing = false;
-                            ToggleWaitMode(false);
-                            timer.Stop();
-                            pForm.ShowRetryButton(progressItems[itp.Request]);
-
-                            return;
+                                    return;
+                                }
+                            }));
                         }
                     }
 
@@ -1055,18 +1089,24 @@ Would you like to open the file now ({e.Result})?
                         PostWorkCallBack = evt =>
                         {
                             if (evt.Error != null)
-                                progressItems[ptp.Request].Error(DateTime.Now);
+                            {
+                                if (evt.Error is CommunicationException ce && ce.HResult == -2146233087)
+                                {
+                                    progressItems[ptp.Request].PublishTimeout(DateTime.Now);
+                                }
+                                else
+                                {
+                                    progressItems[ptp.Request].Error(DateTime.Now);
+                                }
+                            }
                             else
                             {
                                 ptp.CompletedOn = DateTime.Now;
                                 progressItems[ptp.Request].Success(ptp);
                             }
 
-                            if (toProcessList.All(tp => tp.IsProcessed))
-                            {
-                                timer.Stop();
-                                ToggleWaitMode(false);
-                            }
+                            timer.Stop();
+                            ToggleWaitMode(false);
                         }
                     });
                 }

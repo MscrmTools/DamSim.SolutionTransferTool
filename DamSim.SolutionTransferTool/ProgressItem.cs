@@ -10,6 +10,8 @@ namespace DamSim.SolutionTransferTool
 {
     public partial class ProgressItem : UserControl
     {
+        private ToolTip tp = new ToolTip();
+
         public ProgressItem()
         {
             InitializeComponent();
@@ -34,7 +36,6 @@ namespace DamSim.SolutionTransferTool
             {
                 pnlProgress.Visible = true;
                 lblProgress.Text = string.Format(lblProgress.Tag.ToString(), DateTime.Now.ToString("G"));
-                pbProgress.Image = ilProgress.Images[1];
                 lblPercentage.Visible = false;
                 lblAction.Text = "Dependencies check";
                 lblDirection.Text = $@"On organization {Detail.ConnectionName}";
@@ -54,6 +55,18 @@ namespace DamSim.SolutionTransferTool
                 }
                 llDownloadLog.Visible = true;
                 lblProgress.Text += $@" - {date:HH:mm:ss}";
+            }));
+        }
+
+        public void PublishTimeout(DateTime now)
+        {
+            Invoke(new Action(() =>
+            {
+                pnlProgress.Visible = true;
+                lblProgress.Text = string.Format("Timeout occured - {0}", now.ToString("G"));
+                lblPercentage.Visible = false;
+                pbProgress.Image = ilProgress.Images[6];
+                tp.SetToolTip(pbProgress, "A timeout occurs. This does not mean that the publish operation failed. Please check the publish operation status in Solution history in Power Apps Maker portal");
             }));
         }
 

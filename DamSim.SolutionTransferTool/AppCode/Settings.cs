@@ -44,10 +44,10 @@ namespace DamSim.SolutionTransferTool.AppCode
         Revision,
 
         [Description("Manual")]
-        Manual
+        Manual,
 
-        //[Description("Date (yyyy.MM.dd.x)")]
-        //Date
+        [Description("Date (yyyy.MM.dd.x)")]
+        Date
     }
 
     public class Settings : ICloneable
@@ -190,10 +190,10 @@ Upgrade: Install a new version of the solution and remove missing components")]
         [Description("Sets wether solution from source environement must be updated before export")]
         public UpdateVersionEnum UpdateSourceSolutionVersionNew { get; set; }
 
-        //[Category("Solution Version")]
-        //[DisplayName("Date Version mask")]
-        //[Description("A mask like yyyy.MM.dd.x where x is an incremental figure")]
-        //public string VersionDateMask { get; set; }
+        [Category("Solution Version")]
+        [DisplayName("Date Version mask")]
+        [Description("A mask like yyyy.MM.dd.x where x is an incremental figure")]
+        public string VersionDateMask { get; set; }
 
         [Category("Solution Version")]
         [DisplayName("Version update policy")]
@@ -229,7 +229,8 @@ Upgrade: Install a new version of the solution and remove missing components")]
                 RefreshIntervalProp = RefreshIntervalProp,
                 SkipProductUpdateDependencies = SkipProductUpdateDependencies,
                 UpdateSourceSolutionVersionNew = UpdateSourceSolutionVersionNew,
-                VersionSchema = VersionSchema
+                VersionSchema = VersionSchema,
+                VersionDateMask = VersionDateMask
             };
         }
 
