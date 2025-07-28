@@ -176,6 +176,11 @@ Upgrade: Install a new version of the solution and remove missing components")]
         [XmlIgnore]
         public TimeSpan RefreshIntervalProp { get; set; } = new TimeSpan(0, 0, 0, 10);
 
+        [Category("\tGeneral Settings")]
+        [DisplayName("Pre Import Summary")]
+        [Description("Shows a pre import summary before running import")]
+        public bool ShowPreImportSummary { get; set; }
+
         [Category("Import Settings")]
         [DisplayName("Skip Product Update Dependencies")]
         [Description("Sets whether enforcement of dependencies related to product updates should be skipped")]
@@ -229,7 +234,8 @@ Upgrade: Install a new version of the solution and remove missing components")]
                 RefreshIntervalProp = RefreshIntervalProp,
                 SkipProductUpdateDependencies = SkipProductUpdateDependencies,
                 UpdateSourceSolutionVersionNew = UpdateSourceSolutionVersionNew,
-                VersionSchema = VersionSchema
+                VersionSchema = VersionSchema,
+                ShowPreImportSummary = ShowPreImportSummary
             };
         }
 

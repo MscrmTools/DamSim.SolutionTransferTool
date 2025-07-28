@@ -63,9 +63,29 @@ namespace DamSim.SolutionTransferTool.Properties {
         /// <summary>
         ///   Recherche une ressource localisée de type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap Arrow_Down_icon {
+            get {
+                object obj = ResourceManager.GetObject("Arrow-Down-icon", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Recherche une ressource localisée de type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap arrow_switch {
             get {
                 object obj = ResourceManager.GetObject("arrow_switch", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Recherche une ressource localisée de type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Arrow_Up_icon {
+            get {
+                object obj = ResourceManager.GetObject("Arrow-Up-icon", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

@@ -241,10 +241,15 @@ namespace DamSim.SolutionTransferTool
 
         private void DoTransfer()
         {
-            var solutionsToTransfer = PreparareSolutionsToTransfer();
-            if (solutionsToTransfer.Count == 0)
+            var currentSettings = oneTimeSettings ?? settings;
+            var solutionsToTransfer = mForm.SelectedSolutions;
+            if (!currentSettings.ShowPreImportSummary)
             {
-                return;
+                solutionsToTransfer = PreparareSolutionsToTransfer();
+                if (solutionsToTransfer.Count == 0)
+                {
+                    return;
+                }
             }
 
             if (ConnectionDetail.OrganizationMajorVersion >= 9 && ConnectionDetail.OrganizationMinorVersion >= 1)
@@ -271,23 +276,56 @@ Are you sure you want to continue and import solution(s) using this tool?", @"Ne
                 }
             }
 
-            progressItems = new Dictionary<OrganizationRequest, ProgressItem>();
-            toProcessList = new List<BaseToProcess>();
-
             foreach (var solution in solutionsToTransfer)
             {
                 string newVersion = solution.GetAttributeValue<string>("version");
 
-                if ((oneTimeSettings ?? settings).UpdateSourceSolutionVersionNew == UpdateVersionEnum.Yes
-                    || (oneTimeSettings ?? settings).UpdateSourceSolutionVersionNew == UpdateVersionEnum.Prompt
+                if (currentSettings.UpdateSourceSolutionVersionNew == UpdateVersionEnum.Yes
+                    || currentSettings.UpdateSourceSolutionVersionNew == UpdateVersionEnum.Prompt
                     )
                 {
-                    if ((oneTimeSettings ?? settings).VersionSchema == VersionType.Manual)
+                    string computedNewVersion = "Manual";
+
+                    if (currentSettings.VersionSchema != VersionType.Manual)
+                    {
+                        computedNewVersion = GetUpdatedSolutionVersion(solution);
+                    }
+
+                    solution["newversion"] = computedNewVersion;
+                }
+            }
+
+            bool hasUsedPreImportSummary = false;
+
+            if (currentSettings.ShowPreImportSummary)
+            {
+                using (var dialog = new PreImportSummaryForm(settings, solutionsToTransfer))
+                {
+                    if (dialog.ShowDialog(this) != DialogResult.OK)
+                    {
+                        return;
+                    }
+
+                    hasUsedPreImportSummary = true;
+                }
+            }
+
+            progressItems = new Dictionary<OrganizationRequest, ProgressItem>();
+            toProcessList = new List<BaseToProcess>();
+
+            foreach (var solution in solutionsToTransfer.OrderBy(s => s.GetAttributeValue<int>("sortorder")))
+            {
+                string newVersion = solution.GetAttributeValue<string>("version");
+
+                if (currentSettings.UpdateSourceSolutionVersionNew == UpdateVersionEnum.Yes
+                    || currentSettings.UpdateSourceSolutionVersionNew == UpdateVersionEnum.Prompt)
+                {
+                    if (currentSettings.VersionSchema == VersionType.Manual)
                     {
                         var dialog = new UpdateVersionForm(solution.GetAttributeValue<string>("version"), solution.GetAttributeValue<string>("friendlyname"));
                         if (dialog.ShowDialog(this) == DialogResult.OK)
                         {
-                            newVersion = dialog.NewVersion;
+                            solution["newversion"] = dialog.NewVersion;
                         }
                         else
                         {
@@ -296,29 +334,36 @@ Are you sure you want to continue and import solution(s) using this tool?", @"Ne
                     }
                     else
                     {
-                        var computedNewVersion = GetUpdatedSolutionVersion(solution);
-
-                        if ((oneTimeSettings ?? settings).UpdateSourceSolutionVersionNew == UpdateVersionEnum.Prompt)
+                        if (!hasUsedPreImportSummary)
                         {
-                            if (DialogResult.Yes == MessageBox.Show(this,
-                            $@"Do you want to update version for solution {solution.GetAttributeValue<string>("friendlyname")} ?
+                            var computedNewVersion = GetUpdatedSolutionVersion(solution);
+
+                            if ((oneTimeSettings ?? settings).UpdateSourceSolutionVersionNew == UpdateVersionEnum.Prompt)
+                            {
+                                if (DialogResult.Yes == MessageBox.Show(this,
+                                $@"Do you want to update version for solution {solution.GetAttributeValue<string>("friendlyname")} ?
 
 Current version: {solution.GetAttributeValue<string>("version")}
 New version: {computedNewVersion}",
-                            @"Question", MessageBoxButtons.YesNo, MessageBoxIcon.Question))
-                            {
-                                newVersion = computedNewVersion;
+                                @"Question", MessageBoxButtons.YesNo, MessageBoxIcon.Question))
+                                {
+                                    solution["newversion"] = computedNewVersion;
+                                }
                             }
-                        }
-                        else
-                        {
-                            newVersion = computedNewVersion;
+                            else
+                            {
+                                solution["newversion"] = computedNewVersion;
+                            }
                         }
                     }
 
-                    if (solution.GetAttributeValue<string>("version") != newVersion)
+                    if (solution.GetAttributeValue<string>("version") != solution.GetAttributeValue<string>("newversion")
+                        && (!hasUsedPreImportSummary
+                        || hasUsedPreImportSummary && solution.GetAttributeValue<bool>("updateversion")))
                     {
-                        solution["version"] = newVersion;
+                        solution["version"] = solution.GetAttributeValue<string>("newversion");
+                        solution.Attributes.Remove("newversion");
+                        solution.Attributes.Remove("updateversion");
                         Service.Update(solution);
                         mForm.UpdateSolutionVersion(solution);
                     }
