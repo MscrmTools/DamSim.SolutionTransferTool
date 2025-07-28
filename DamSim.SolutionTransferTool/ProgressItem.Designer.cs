@@ -76,6 +76,8 @@
             this.ilProgress.Images.SetKeyName(2, "error.png");
             this.ilProgress.Images.SetKeyName(3, "checked.png");
             this.ilProgress.Images.SetKeyName(4, "Upgrade.png");
+            this.ilProgress.Images.SetKeyName(5, "search.png");
+            this.ilProgress.Images.SetKeyName(6, "crisis.png");
             // 
             // panel1
             // 

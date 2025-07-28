@@ -10,6 +10,8 @@ namespace DamSim.SolutionTransferTool
 {
     public partial class ProgressItem : UserControl
     {
+        private ToolTip tp = new ToolTip();
+
         public ProgressItem()
         {
             InitializeComponent();
@@ -28,6 +30,19 @@ namespace DamSim.SolutionTransferTool
         public string SolutionVersion { get; set; }
         public Enumerations.RequestType Type { get; set; }
 
+        public void CheckDependencies()
+        {
+            Invoke(new Action(() =>
+            {
+                pnlProgress.Visible = true;
+                lblProgress.Text = string.Format(lblProgress.Tag.ToString(), DateTime.Now.ToString("G"));
+                lblPercentage.Visible = false;
+                lblAction.Text = "Dependencies check";
+                lblDirection.Text = $@"On organization {Detail.ConnectionName}";
+                pbProgress.Image = ilProgress.Images[5];
+            }));
+        }
+
         public void Error(DateTime date, string errorMessage = null)
         {
             Invoke(new Action(() =>
@@ -43,6 +58,18 @@ namespace DamSim.SolutionTransferTool
             }));
         }
 
+        public void PublishTimeout(DateTime now)
+        {
+            Invoke(new Action(() =>
+            {
+                pnlProgress.Visible = true;
+                lblProgress.Text = string.Format("Timeout occured - {0}", now.ToString("G"));
+                lblPercentage.Visible = false;
+                pbProgress.Image = ilProgress.Images[6];
+                tp.SetToolTip(pbProgress, "A timeout occurs. This does not mean that the publish operation failed. Please check the publish operation status in Solution history in Power Apps Maker portal");
+            }));
+        }
+
         public void Start()
         {
             Invoke(new Action(() =>
@@ -51,6 +78,8 @@ namespace DamSim.SolutionTransferTool
                 lblProgress.Text = string.Format(lblProgress.Tag.ToString(), DateTime.Now.ToString("G"));
                 pbProgress.Image = ilProgress.Images[1];
                 lblPercentage.Visible = Request is ImportSolutionRequest || Request is StageAndUpgradeRequest;
+
+                ProgressItem_Load(this, null);
             }));
         }
 
