@@ -157,7 +157,7 @@ namespace DamSim.SolutionTransferTool
                 if (sfd.ShowDialog(Parent) == DialogResult.OK)
                 {
                     File.WriteAllBytes(sfd.FileName, this.SolutionFile);
-                    MessageBox.Show(Parent, $@"File saved to {sfd.FileName}");
+                    MessageBox.Show(Parent, $@"File saved to {sfd.FileName}", "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             }
         }
