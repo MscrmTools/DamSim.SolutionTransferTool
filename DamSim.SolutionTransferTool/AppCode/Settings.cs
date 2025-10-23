@@ -79,7 +79,7 @@ namespace DamSim.SolutionTransferTool.AppCode
         [Category("Export Settings")]
         [DisplayName("Export asynchronously")]
         [Description("Sets whether solution must be exported asynchronously")]
-        public bool ExportAsynchronously { get; set; }
+        public bool ExportAsynchronously { get; set; } = true;
 
         [Category("Export Settings")]
         [DisplayName("Export Autonumbers Settings")]
@@ -179,7 +179,7 @@ Upgrade: Install a new version of the solution and remove missing components")]
         [Category("\tGeneral Settings")]
         [DisplayName("Pre Import Summary")]
         [Description("Shows a pre import summary before running import")]
-        public bool ShowPreImportSummary { get; set; }
+        public bool ShowPreImportSummary { get; set; } = true;
 
         [Category("Import Settings")]
         [DisplayName("Skip Product Update Dependencies")]
@@ -235,7 +235,7 @@ Upgrade: Install a new version of the solution and remove missing components")]
                 SkipProductUpdateDependencies = SkipProductUpdateDependencies,
                 UpdateSourceSolutionVersionNew = UpdateSourceSolutionVersionNew,
                 VersionSchema = VersionSchema,
-                VersionDateMask = VersionDateMask
+                VersionDateMask = VersionDateMask,
                 ShowPreImportSummary = ShowPreImportSummary
             };
         }

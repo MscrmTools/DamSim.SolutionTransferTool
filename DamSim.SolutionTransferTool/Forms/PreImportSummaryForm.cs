@@ -47,17 +47,10 @@ namespace DamSim.SolutionTransferTool.Forms
 
         private void btnStart_Click(object sender, System.EventArgs e)
         {
-            if (!scSkipNewVersionNumber.Checked)
+            foreach (ListViewItem item in lvSolutions.Items)
             {
-                foreach (ListViewItem item in lvSolutions.Items)
-                {
-                    if (item.Checked)
-                    {
-                        ((Entity)item.Tag)["updateversion"] = true;
-                    }
-
-                    ((Entity)item.Tag)["sortorder"] = item.Index;
-                }
+                ((Entity)item.Tag)["updateversion"] = item.Checked && !scSkipNewVersionNumber.Checked;
+                ((Entity)item.Tag)["sortorder"] = item.Index;
             }
 
             currentSettings.CheckForMissingDependencies = scCheckMissingDeps.Checked;

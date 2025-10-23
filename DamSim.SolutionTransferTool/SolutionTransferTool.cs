@@ -242,9 +242,8 @@ namespace DamSim.SolutionTransferTool
 
         private void DoTransfer()
         {
-            var currentSettings = oneTimeSettings ?? settings;
             var solutionsToTransfer = mForm.SelectedSolutions;
-            if (!currentSettings.ShowPreImportSummary)
+            if (!(oneTimeSettings ?? settings).ShowPreImportSummary)
             {
                 solutionsToTransfer = PreparareSolutionsToTransfer();
                 if (solutionsToTransfer.Count == 0)
@@ -281,13 +280,13 @@ Are you sure you want to continue and import solution(s) using this tool?", @"Ne
             {
                 string newVersion = solution.GetAttributeValue<string>("version");
 
-                if (currentSettings.UpdateSourceSolutionVersionNew == UpdateVersionEnum.Yes
-                    || currentSettings.UpdateSourceSolutionVersionNew == UpdateVersionEnum.Prompt
+                if ((oneTimeSettings ?? settings).UpdateSourceSolutionVersionNew == UpdateVersionEnum.Yes
+                    || (oneTimeSettings ?? settings).UpdateSourceSolutionVersionNew == UpdateVersionEnum.Prompt
                     )
                 {
                     string computedNewVersion = "Manual";
 
-                    if (currentSettings.VersionSchema != VersionType.Manual)
+                    if ((oneTimeSettings ?? settings).VersionSchema != VersionType.Manual)
                     {
                         computedNewVersion = GetUpdatedSolutionVersion(solution);
                     }
@@ -298,14 +297,20 @@ Are you sure you want to continue and import solution(s) using this tool?", @"Ne
 
             bool hasUsedPreImportSummary = false;
 
-            if (currentSettings.ShowPreImportSummary)
+            if ((oneTimeSettings ?? settings).ShowPreImportSummary)
             {
-                using (var dialog = new PreImportSummaryForm(settings, solutionsToTransfer))
+                var tmpSettings = (Settings)settings.Clone();
+
+                using (var dialog = new PreImportSummaryForm(tmpSettings, solutionsToTransfer))
                 {
                     if (dialog.ShowDialog(this) != DialogResult.OK)
                     {
                         return;
                     }
+
+                    oneTimeSettings = tmpSettings;
+                    settings.ShowPreImportSummary = tmpSettings.ShowPreImportSummary;
+                    settings.Save(ConnectionDetail?.ConnectionName);
 
                     hasUsedPreImportSummary = true;
                 }
@@ -318,10 +323,10 @@ Are you sure you want to continue and import solution(s) using this tool?", @"Ne
             {
                 string newVersion = solution.GetAttributeValue<string>("version");
 
-                if (currentSettings.UpdateSourceSolutionVersionNew == UpdateVersionEnum.Yes
-                    || currentSettings.UpdateSourceSolutionVersionNew == UpdateVersionEnum.Prompt)
+                if ((oneTimeSettings ?? settings).UpdateSourceSolutionVersionNew == UpdateVersionEnum.Yes
+                    || (oneTimeSettings ?? settings).UpdateSourceSolutionVersionNew == UpdateVersionEnum.Prompt)
                 {
-                    if (currentSettings.VersionSchema == VersionType.Manual)
+                    if ((oneTimeSettings ?? settings).VersionSchema == VersionType.Manual)
                     {
                         var dialog = new UpdateVersionForm(solution.GetAttributeValue<string>("version"), solution.GetAttributeValue<string>("friendlyname"));
                         if (dialog.ShowDialog(this) == DialogResult.OK)
@@ -365,9 +370,14 @@ New version: {computedNewVersion}",
                         solution["version"] = solution.GetAttributeValue<string>("newversion");
                         solution.Attributes.Remove("newversion");
                         solution.Attributes.Remove("updateversion");
+                        solution.Attributes.Remove("sortorder");
                         Service.Update(solution);
                         mForm.UpdateSolutionVersion(solution);
                     }
+
+                    solution.Attributes.Remove("newversion");
+                    solution.Attributes.Remove("updateversion");
+                    solution.Attributes.Remove("sortorder");
                 }
 
                 var exportItem = new ExportToProcess
