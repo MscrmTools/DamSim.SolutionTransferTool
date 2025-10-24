@@ -133,6 +133,16 @@ namespace DamSim.SolutionTransferTool.Properties {
         /// <summary>
         ///   Recherche une ressource localisée de type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap Error64 {
+            get {
+                object obj = ResourceManager.GetObject("Error64", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Recherche une ressource localisée de type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap icons8_cancel {
             get {
                 object obj = ResourceManager.GetObject("icons8-cancel", resourceCulture);
@@ -196,6 +206,16 @@ namespace DamSim.SolutionTransferTool.Properties {
         internal static System.Drawing.Bitmap Startup32 {
             get {
                 object obj = ResourceManager.GetObject("Startup32", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Recherche une ressource localisée de type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Success64 {
+            get {
+                object obj = ResourceManager.GetObject("Success64", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

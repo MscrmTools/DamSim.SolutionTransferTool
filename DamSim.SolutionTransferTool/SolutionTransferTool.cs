@@ -1,7 +1,9 @@
 ﻿using DamSim.SolutionTransferTool.AppCode;
 using DamSim.SolutionTransferTool.Forms;
+using DamSim.SolutionTransferTool.Properties;
 using McTools.Xrm.Connection;
 using Microsoft.Crm.Sdk.Messages;
+using Microsoft.Toolkit.Uwp.Notifications;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Client;
 using Microsoft.Xrm.Sdk.Messages;
@@ -12,14 +14,17 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.ServiceModel;
 using System.Windows.Forms;
 using WeifenLuo.WinFormsUI.Docking;
 using XrmToolBox.Extensibility;
 using XrmToolBox.Extensibility.Interfaces;
 using static DamSim.SolutionTransferTool.BaseToProcess;
+using Settings = DamSim.SolutionTransferTool.AppCode.Settings;
 
 namespace DamSim.SolutionTransferTool
 {
@@ -66,11 +71,63 @@ namespace DamSim.SolutionTransferTool
 
             sForm = new SettingsForm();
             sForm.Show(dpMain, DockState.DockRight);
+
+            ToastNotificationManagerCompat.OnActivated += toastArgs =>
+            {
+                var args = ToastArguments.Parse(toastArgs.Argument);
+                string pid = args["pid"];
+
+                try
+                {
+                    // Get the process by ID
+                    Process process = Process.GetProcessById(int.Parse(pid));
+
+                    // Check if the process has a main window
+                    if (process.MainWindowHandle != IntPtr.Zero)
+                    {
+                        // Bring the process to the foreground
+                        SetForegroundWindow(process.MainWindowHandle);
+                    }
+                }
+                catch (Exception ex)
+                {
+                }
+            };
+            PrepareNotificationImages();
         }
+
+        [DllImport("user32.dll")]
+        private static extern bool SetForegroundWindow(IntPtr hWnd);
 
         private void PForm_OnRetry(object sender, EventArgs e)
         {
             Retry();
+        }
+
+        private void PrepareNotificationImages()
+        {
+            var successPath = Path.Combine(Path.GetTempPath(), "xtb.stt.success.png");
+            var errorPath = Path.Combine(Path.GetTempPath(), "xtb.stt.error.png");
+            var images = new[] { successPath, errorPath };
+
+            foreach (var image in images)
+            {
+                if (File.Exists(image)) continue;
+
+                using (MemoryStream imageStream = new MemoryStream())
+                {
+                    // Simulate writing an image to the stream (e.g., from a resource or download)
+                    Image exampleImage = image.EndsWith("success.png") ? Resources.Success64 : Resources.Error64;
+                    exampleImage.Save(imageStream, System.Drawing.Imaging.ImageFormat.Png);
+                    imageStream.Seek(0, SeekOrigin.Begin);
+
+                    // Save the stream to a temporary file
+                    using (FileStream fileStream = new FileStream(image, FileMode.Create, FileAccess.Write))
+                    {
+                        imageStream.CopyTo(fileStream);
+                    }
+                }
+            }
         }
 
         #endregion Constructor
@@ -1006,6 +1063,20 @@ Would you like to open the file now ({e.Result})?
                                 timer.Stop();
                                 pForm.ShowRetryButton(progressItems[itp.Request]);
 
+                                try
+                                {
+                                    new ToastContentBuilder()
+                                       .AddArgument("action", "viewDetails")
+                                       .AddText("Solution Transfer Tool")
+                                       .AddText("The solution has missing dependencies.")
+                                       .AddArgument("pid", Process.GetCurrentProcess().Id)
+                                       .Show();
+                                }
+                                catch
+                                {
+                                    // Ignore to not fail if XrmToolBox does not implement Toast properly
+                                }
+
                                 return;
                             }
                         }
@@ -1071,6 +1142,25 @@ Would you like to open the file now ({e.Result})?
                             {
                                 progressItems[itp.Request].Success(itp);
                                 itp.Succeeded = true;
+
+                                try
+                                {
+                                    new ToastContentBuilder()
+                                       .AddArgument("action", "viewDetails")
+                                       .AddText("Solution Transfer Tool")
+                                       .AddText(itp.Solution.GetAttributeValue<string>("friendlyname"))
+                                       .AddText("Imported successfully")
+                                       .AddArgument("pid", Process.GetCurrentProcess().Id)
+                                       .AddAppLogoOverride(new Uri(Path.Combine(Path.GetTempPath(), "xtb.stt.success.png")))
+                                       .Show(toast =>
+                                       {
+                                           toast.ExpirationTime = DateTime.Now.AddMinutes(5);
+                                       });
+                                }
+                                catch
+                                {
+                                    // Ignore to not fail if XrmToolBox does not implement Toast properly
+                                }
                             }
                             else
                             {
@@ -1078,6 +1168,25 @@ Would you like to open the file now ({e.Result})?
                                 ToggleWaitMode(false);
                                 timer.Stop();
                                 pForm.ShowRetryButton(progressItems[itp.Request]);
+
+                                try
+                                {
+                                    new ToastContentBuilder()
+                                   .AddArgument("action", "viewDetails")
+                                   .AddText("Solution Transfer Tool")
+                                   .AddText(itp.Solution.GetAttributeValue<string>("friendlyname"))
+                                   .AddText("Failed to import")
+                                   .AddArgument("pid", Process.GetCurrentProcess().Id)
+                                   .AddAppLogoOverride(new Uri(Path.Combine(Path.GetTempPath(), "xtb.stt.error.png")))
+                                   .Show(toast =>
+                                   {
+                                       toast.ExpirationTime = DateTime.Now.AddMinutes(5);
+                                   });
+                                }
+                                catch
+                                {
+                                    // Ignore to not fail if XrmToolBox does not implement Toast properly
+                                }
                             }
 
                             if (toProcessList.All(tp => tp.IsProcessed))
