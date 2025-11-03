@@ -195,6 +195,11 @@ Upgrade: Install a new version of the solution and remove missing components")]
         [Description("Sets wether solution from source environement must be updated before export")]
         public UpdateVersionEnum UpdateSourceSolutionVersionNew { get; set; }
 
+        [Category("\tGeneral Settings")]
+        [DisplayName("Use Windows Toast Notification")]
+        [Description("Sets where to use Windows Toast Notifications to report solution import success or failure")]
+        public bool UseWindowsToastNotification { get; set; } = true;
+
         [Category("Solution Version")]
         [DisplayName("Date Version mask")]
         [Description("A mask like yyyy.MM.dd.x where x is an incremental figure")]

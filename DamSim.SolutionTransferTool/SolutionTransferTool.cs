@@ -167,7 +167,13 @@ namespace DamSim.SolutionTransferTool
         {
             if (actionName == "AdditionalOrganization")
             {
-                AdditionalConnectionDetails.Add(detail);
+                if (!AdditionalConnectionDetails.Any(c => c.ConnectionId == detail.ConnectionId))
+                {
+                    AdditionalConnectionDetails.Add(detail);
+
+                    mForm.DisplayTargetOrganizations(AdditionalConnectionDetails.ToList());
+                    mForm.DisplayTargetOrganizationsSolutions(AdditionalConnectionDetails.ToList(), this);
+                }
 
                 if (newService is OrganizationServiceProxy proxy)
                 {
@@ -177,8 +183,6 @@ namespace DamSim.SolutionTransferTool
                 {
                     client.InnerChannel.OperationTimeout = detail.Timeout;
                 }
-
-                mForm.DisplayTargetOrganizations(AdditionalConnectionDetails.ToList());
             }
             else
             {
@@ -788,6 +792,7 @@ Would you like to open the file now ({e.Result})?
             }
 
             mForm.DisplaySolutions(solutions.Entities.ToList());
+            mForm.DisplayTargetOrganizationsSolutions(AdditionalConnectionDetails.ToList(), this);
         }
 
         private void StartExport(ExportToProcess etp)
@@ -1063,18 +1068,22 @@ Would you like to open the file now ({e.Result})?
                                 timer.Stop();
                                 pForm.ShowRetryButton(progressItems[itp.Request]);
 
-                                try
+                                if ((oneTimeSettings ?? settings).UseWindowsToastNotification)
                                 {
-                                    new ToastContentBuilder()
-                                       .AddArgument("action", "viewDetails")
-                                       .AddText("Solution Transfer Tool")
-                                       .AddText("The solution has missing dependencies.")
-                                       .AddArgument("pid", Process.GetCurrentProcess().Id)
-                                       .Show();
-                                }
-                                catch
-                                {
-                                    // Ignore to not fail if XrmToolBox does not implement Toast properly
+                                    try
+                                    {
+                                        new ToastContentBuilder()
+                                           .AddArgument("action", "viewDetails")
+                                           .AddHeader("XTB.TTO.STT", "Solution Transfer Tool", "")
+                                           .AddText($"{itp.Solution.GetAttributeValue<string>("friendlyname")} {itp.Solution.GetAttributeValue<string>("version")}")
+                                           .AddText("The solution has missing dependencies.")
+                                           .AddArgument("pid", Process.GetCurrentProcess().Id)
+                                           .Show();
+                                    }
+                                    catch
+                                    {
+                                        // Ignore to not fail if XrmToolBox does not implement Toast properly
+                                    }
                                 }
 
                                 return;
@@ -1143,23 +1152,32 @@ Would you like to open the file now ({e.Result})?
                                 progressItems[itp.Request].Success(itp);
                                 itp.Succeeded = true;
 
-                                try
+                                Invoke(new Action(() =>
                                 {
-                                    new ToastContentBuilder()
-                                       .AddArgument("action", "viewDetails")
-                                       .AddText("Solution Transfer Tool")
-                                       .AddText(itp.Solution.GetAttributeValue<string>("friendlyname"))
-                                       .AddText("Imported successfully")
-                                       .AddArgument("pid", Process.GetCurrentProcess().Id)
-                                       .AddAppLogoOverride(new Uri(Path.Combine(Path.GetTempPath(), "xtb.stt.success.png")))
-                                       .Show(toast =>
-                                       {
-                                           toast.ExpirationTime = DateTime.Now.AddMinutes(5);
-                                       });
-                                }
-                                catch
+                                    mForm.SetTargetSolutionVersion(itp.Solution, itp.Detail);
+                                }));
+
+                                if ((oneTimeSettings ?? settings).UseWindowsToastNotification)
                                 {
-                                    // Ignore to not fail if XrmToolBox does not implement Toast properly
+                                    try
+                                    {
+                                        new ToastContentBuilder()
+                                           .AddArgument("action", "viewDetails")
+                                           .AddHeader("XTB.TTO.STT", "Solution Transfer Tool", "")
+                                           .AddText($"{itp.Solution.GetAttributeValue<string>("friendlyname")} {itp.Solution.GetAttributeValue<string>("version")}")
+                                           .AddText("Imported successfully")
+                                           .AddText($"To {itp.Detail.ConnectionName}")
+                                           .AddArgument("pid", Process.GetCurrentProcess().Id)
+                                           .AddAppLogoOverride(new Uri(Path.Combine(Path.GetTempPath(), "xtb.stt.success.png")))
+                                           .Show(toast =>
+                                           {
+                                               toast.ExpirationTime = DateTime.Now.AddMinutes(5);
+                                           });
+                                    }
+                                    catch (Exception error)
+                                    {
+                                        // Ignore to not fail if XrmToolBox does not implement Toast properly
+                                    }
                                 }
                             }
                             else
@@ -1169,23 +1187,27 @@ Would you like to open the file now ({e.Result})?
                                 timer.Stop();
                                 pForm.ShowRetryButton(progressItems[itp.Request]);
 
-                                try
+                                if ((oneTimeSettings ?? settings).UseWindowsToastNotification)
                                 {
-                                    new ToastContentBuilder()
-                                   .AddArgument("action", "viewDetails")
-                                   .AddText("Solution Transfer Tool")
-                                   .AddText(itp.Solution.GetAttributeValue<string>("friendlyname"))
-                                   .AddText("Failed to import")
-                                   .AddArgument("pid", Process.GetCurrentProcess().Id)
-                                   .AddAppLogoOverride(new Uri(Path.Combine(Path.GetTempPath(), "xtb.stt.error.png")))
-                                   .Show(toast =>
-                                   {
-                                       toast.ExpirationTime = DateTime.Now.AddMinutes(5);
-                                   });
-                                }
-                                catch
-                                {
-                                    // Ignore to not fail if XrmToolBox does not implement Toast properly
+                                    try
+                                    {
+                                        new ToastContentBuilder()
+                                       .AddArgument("action", "viewDetails")
+                                       .AddHeader("XTB.TTO.STT", "Solution Transfer Tool", "")
+                                       .AddText($"{itp.Solution.GetAttributeValue<string>("friendlyname")} {itp.Solution.GetAttributeValue<string>("version")}")
+                                       .AddText($"To {itp.Detail.ConnectionName}")
+                                       .AddText("Failed to import")
+                                       .AddArgument("pid", Process.GetCurrentProcess().Id)
+                                       .AddAppLogoOverride(new Uri(Path.Combine(Path.GetTempPath(), "xtb.stt.error.png")))
+                                       .Show(toast =>
+                                       {
+                                           toast.ExpirationTime = DateTime.Now.AddMinutes(5);
+                                       });
+                                    }
+                                    catch
+                                    {
+                                        // Ignore to not fail if XrmToolBox does not implement Toast properly
+                                    }
                                 }
                             }
 
