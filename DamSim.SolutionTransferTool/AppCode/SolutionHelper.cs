@@ -21,6 +21,19 @@ namespace DamSim.SolutionTransferTool.AppCode
             return false;
         }
 
+        public static List<string> CheckForNewConnectionReferences(List<Guid> solutionIds, IOrganizationService targetService, Dictionary<Guid, List<ConnectionReferenceInfo>> cris)
+        {
+            var crs = cris.Where(c => solutionIds.Contains(c.Key)).SelectMany(c => c.Value).Select(c => c.LogicalName).ToList();
+            if (crs.Count == 0)
+            {
+                return new List<string>();
+            }
+
+            var targetConnectionReferences = GetConnectionReferences(crs, targetService);
+
+            return crs.Except(crs.Where(c => targetConnectionReferences.Any(r => r.GetAttributeValue<string>("connectionreferencelogicalname") == c))).ToList();
+        }
+
         private static int GetConnectionReferenceComponentType(IOrganizationService service)
         {
             return service.RetrieveMultiple(new QueryExpression("solutioncomponentdefinition")
@@ -35,6 +48,21 @@ namespace DamSim.SolutionTransferTool.AppCode
                     }
                 }
             }).Entities.First().GetAttributeValue<int>("solutioncomponenttype");
+        }
+
+        private static List<Entity> GetConnectionReferences(List<string> crs, IOrganizationService targetService)
+        {
+            return targetService.RetrieveMultiple(new QueryExpression("connectionreference")
+            {
+                ColumnSet = new ColumnSet("connectionreferencelogicalname", "connectionreferencedisplayname"),
+                Criteria = new FilterExpression
+                {
+                    Conditions =
+                   {
+                       new ConditionExpression("connectionreferencelogicalname", ConditionOperator.In, crs)
+                   }
+                }
+            }).Entities.ToList();
         }
 
         private static List<Entity> GetConnectionReferences(string solutionUniqueName, IOrganizationService service)

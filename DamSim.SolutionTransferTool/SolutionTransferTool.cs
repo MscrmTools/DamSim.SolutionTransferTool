@@ -19,6 +19,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.ServiceModel;
+using System.Text;
 using System.Windows.Forms;
 using WeifenLuo.WinFormsUI.Docking;
 using XrmToolBox.Extensibility;
@@ -35,6 +36,7 @@ namespace DamSim.SolutionTransferTool
         private readonly MainForm mForm;
         private readonly ProgressForm pForm;
         private bool cancelPending;
+        private Dictionary<Guid, List<ConnectionReferenceInfo>> connectionReferencesBySolution = new Dictionary<Guid, List<ConnectionReferenceInfo>>();
         private OrganizationRequest currentRequest;
         private string lastConnectionName;
         private Guid lastImportId;
@@ -315,21 +317,29 @@ namespace DamSim.SolutionTransferTool
 
             if (ConnectionDetail.OrganizationMajorVersion >= 9 && ConnectionDetail.OrganizationMinorVersion >= 1)
             {
-                var hasMissingConnectionReferences = false;
+                StringBuilder missingReferences = new StringBuilder();
 
-                foreach (var solution in solutionsToTransfer)
+                foreach (var targetDetail in AdditionalConnectionDetails)
                 {
-                    foreach (var detail in AdditionalConnectionDetails)
+                    var missingConnectionReferences = SolutionHelper.CheckForNewConnectionReferences(solutionsToTransfer.Select(e => e.Id).ToList(), targetDetail.GetCrmServiceClient(), connectionReferencesBySolution);
+
+                    if (missingConnectionReferences.Count > 0)
                     {
-                        hasMissingConnectionReferences = hasMissingConnectionReferences || SolutionHelper.CheckForNewConnectionReferences(solution.GetAttributeValue<string>("uniquename"), Service, detail.GetCrmServiceClient());
+                        missingReferences.AppendLine($"- to {targetDetail.ConnectionName}");
+                        foreach (var mcr in missingConnectionReferences)
+                        {
+                            missingReferences.AppendLine($"\t- {mcr}");
+                        }
                     }
                 }
 
-                if (hasMissingConnectionReferences)
+                if (missingReferences.Length > 0)
                 {
-                    var result = MessageBox.Show(this, @"It seems you are shipping new connection reference(s).
+                    var result = MessageBox.Show(this, $@"It seems you are shipping new connection reference(s):
+{missingReferences}
+It is recommended to use Power Apps maker portal to import the solution that contains new connection references so that you can map new connection references in the target environment(s).
 
-It is recommended to use Power Apps maker portal to import the solution that contains new connection references so that you can map new connection references in the target environment(s)
+Alternatively, do not forget to update connection references in target environment(s) and start any flow that is using one of these connection references.
 
 Are you sure you want to continue and import solution(s) using this tool?", @"New Connection reference(s) detected!",
                        MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
@@ -681,6 +691,10 @@ Would you like to open the file now ({e.Result})?
                 {
                     isr.HoldingSolution = (oneTimeSettings ?? settings).ImportMode == ImportModeEnum.StageForUpgrade && !isPatch;
                     isr.SkipProductUpdateDependencies = (oneTimeSettings ?? settings).SkipProductUpdateDependencies;
+                    isr.SolutionParameters = new SolutionParameters
+                    {
+                        DeployMissingPackagesBeforeSolutionImport = (oneTimeSettings ?? settings).DeployMissingPackagesBeforeSolutionImport
+                    };
                 }
             }
             else if (request is StageAndUpgradeRequest saur)
@@ -693,6 +707,10 @@ Would you like to open the file now ({e.Result})?
                 if (ConnectionDetail.OrganizationMajorVersion >= 8)
                 {
                     saur.SkipProductUpdateDependencies = (oneTimeSettings ?? settings).SkipProductUpdateDependencies;
+                    saur.SolutionParameters = new SolutionParameters
+                    {
+                        DeployMissingPackagesBeforeSolutionImport = (oneTimeSettings ?? settings).DeployMissingPackagesBeforeSolutionImport
+                    };
                 }
             }
 
@@ -731,68 +749,172 @@ Would you like to open the file now ({e.Result})?
         /// </summary>
         private void RetrieveSolutions()
         {
-            var sourceSolutionsQuery = new QueryExpression
+            WorkAsync(new WorkAsyncInfo
             {
-                EntityName = "solution",
-                ColumnSet = new ColumnSet("publisherid", "installedon", "version", "uniquename", "friendlyname", "description"),
-                Criteria = new FilterExpression
+                Message = "Loading solutions...",
+                Work = (bw, e) =>
                 {
-                    Conditions =
+                    var solutionComponentsQuery = new QueryExpression
+                    {
+                        EntityName = "solutioncomponentdefinition",
+                        ColumnSet = new ColumnSet("name", "solutioncomponenttype"),
+                    };
+
+                    if (ConnectionDetail.OrganizationMajorVersion > 8)
+                    {
+                        solutionComponentTypes = new Dictionary<int, string>();
+
+                        foreach (var def in sourceService.RetrieveMultiple(solutionComponentsQuery).Entities)
+                        {
+                            var compDef = def.GetAttributeValue<int>("solutioncomponenttype");
+
+                            if (!solutionComponentTypes.ContainsKey(compDef))
+                            {
+                                solutionComponentTypes.Add(compDef, def.GetAttributeValue<string>("name"));
+                            }
+                            else
+                            {
+                                solutionComponentTypes[compDef] = def.GetAttributeValue<string>("name");
+                            }
+                        }
+
+                        var opt = (RetrieveOptionSetResponse)sourceService.Execute(new RetrieveOptionSetRequest
+                        {
+                            Name = "componenttype"
+                        });
+
+                        foreach (var op in ((OptionSetMetadata)opt.OptionSetMetadata).Options)
+                        {
+                            var label = op.Label.UserLocalizedLabel?.Label ?? op.Label.LocalizedLabels.FirstOrDefault(l => l.LanguageCode == 1033)?.Label ?? op.Label.LocalizedLabels[0].Label;
+                            if (!solutionComponentTypes.ContainsKey(op.Value.Value))
+                            {
+                                solutionComponentTypes.Add(op.Value.Value, label);
+                            }
+                            else
+                            {
+                                solutionComponentTypes[op.Value.Value] = label;
+                            }
+                        }
+                    }
+
+                    var sourceSolutionsQuery = new QueryExpression
+                    {
+                        EntityName = "solution",
+                        ColumnSet = new ColumnSet("publisherid", "installedon", "version", "uniquename", "friendlyname", "description"),
+                        Criteria = new FilterExpression
+                        {
+                            Conditions =
                     {
                         new ConditionExpression("ismanaged", ConditionOperator.Equal, false),
                         new ConditionExpression("isvisible", ConditionOperator.Equal, true),
                         new ConditionExpression("uniquename", ConditionOperator.NotEqual, "Default")
                     }
+                        }
+                    };
+
+                    if (solutionComponentTypes.Count > 0)
+                    {
+                        sourceSolutionsQuery.LinkEntities.Add(new LinkEntity
+                        {
+                            LinkFromEntityName = "solution",
+                            LinkFromAttributeName = "solutionid",
+                            LinkToAttributeName = "solutionid",
+                            LinkToEntityName = "solutioncomponent",
+                            JoinOperator = JoinOperator.LeftOuter,
+                            EntityAlias = "component",
+                            LinkEntities =
+                    {
+                        new LinkEntity
+                        {
+                            LinkFromEntityName = "solutioncomponent",
+                            LinkFromAttributeName=  "objectid",
+                            LinkToAttributeName = "connectionreferenceid",
+                            LinkToEntityName = "connectionreference",
+                            Columns = new ColumnSet("connectionreferencedisplayname","connectionreferencelogicalname"),
+                            EntityAlias = "connectionreference",
+                            JoinOperator = JoinOperator.LeftOuter,
+                        }
+                    }
+                        });
+                    }
+
+                    var solutions = sourceService.RetrieveMultiple(sourceSolutionsQuery);
+                    var uniqueSolutions = new List<Entity>();
+
+                    foreach (var solution in solutions.Entities)
+                    {
+                        if (solution.Contains("connectionreference.connectionreferencelogicalname"))
+                        {
+                            var logicalName = solution.GetAttributeValue<AliasedValue>("connectionreference.connectionreferencelogicalname").Value.ToString();
+                            var displayName = solution.GetAttributeValue<AliasedValue>("connectionreference.connectionreferencedisplayname").Value.ToString();
+                            if (!connectionReferencesBySolution.ContainsKey(solution.Id))
+                            {
+                                connectionReferencesBySolution.Add(solution.Id, new List<ConnectionReferenceInfo>());
+                            }
+                            connectionReferencesBySolution[solution.Id].Add(new ConnectionReferenceInfo { DisplayName = displayName, LogicalName = logicalName });
+                        }
+
+                        if (uniqueSolutions.All(s => s.Id != solution.Id))
+                        {
+                            solution.Attributes.Remove("connectionreference.connectionreferencelogicalname");
+                            solution.Attributes.Remove("connectionreference.connectionreferencedisplayname");
+                            uniqueSolutions.Add(solution);
+                        }
+                    }
+
+                    e.Result = uniqueSolutions;
+                },
+                PostWorkCallBack = e =>
+                {
+                    if (e.Error != null)
+                    {
+                        MessageBox.Show(this, $"An error occured while retrieving solutions:\n{e.Error.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+
+                    var uniqueSolutions = (List<Entity>)e.Result;
+
+                    mForm.DisplaySolutions(uniqueSolutions);
+                    mForm.DisplayTargetOrganizationsSolutions(AdditionalConnectionDetails.ToList(), this);
                 }
-            };
+            });
+        }
 
-            var solutions = sourceService.RetrieveMultiple(sourceSolutionsQuery);
+        private void RunImport(ImportToProcess itp)
+        {
+            progressItems[itp.Request].Start();
 
-            var solutionComponentsQuery = new QueryExpression
+            if (itp.Request is ImportSolutionRequest isr)
             {
-                EntityName = "solutioncomponentdefinition",
-                ColumnSet = new ColumnSet("name", "solutioncomponenttype"),
-            };
-
-            if (ConnectionDetail.OrganizationMajorVersion > 8)
+                isr.CustomizationFile = itp.Export.SolutionContent;
+            }
+            else if (itp.Request is StageAndUpgradeRequest saur)
             {
-                solutionComponentTypes = new Dictionary<int, string>();
-
-                foreach (var def in sourceService.RetrieveMultiple(solutionComponentsQuery).Entities)
-                {
-                    var compDef = def.GetAttributeValue<int>("solutioncomponenttype");
-
-                    if (!solutionComponentTypes.ContainsKey(compDef))
-                    {
-                        solutionComponentTypes.Add(compDef, def.GetAttributeValue<string>("name"));
-                    }
-                    else
-                    {
-                        solutionComponentTypes[compDef] = def.GetAttributeValue<string>("name");
-                    }
-                }
-
-                var opt = (RetrieveOptionSetResponse)sourceService.Execute(new RetrieveOptionSetRequest
-                {
-                    Name = "componenttype"
-                });
-
-                foreach (var op in ((OptionSetMetadata)opt.OptionSetMetadata).Options)
-                {
-                    var label = op.Label.UserLocalizedLabel?.Label ?? op.Label.LocalizedLabels.FirstOrDefault(l => l.LanguageCode == 1033)?.Label ?? op.Label.LocalizedLabels[0].Label;
-                    if (!solutionComponentTypes.ContainsKey(op.Value.Value))
-                    {
-                        solutionComponentTypes.Add(op.Value.Value, label);
-                    }
-                    else
-                    {
-                        solutionComponentTypes[op.Value.Value] = label;
-                    }
-                }
+                saur.CustomizationFile = itp.Export.SolutionContent;
             }
 
-            mForm.DisplaySolutions(solutions.Entities.ToList());
-            mForm.DisplayTargetOrganizationsSolutions(AdditionalConnectionDetails.ToList(), this);
+            WorkAsync(new WorkAsyncInfo
+            {
+                Message = null,
+                Work = (bw2, evt2) =>
+                {
+                    itp.AsyncOperationId = ((ExecuteAsyncResponse)itp.Detail.GetCrmServiceClient().Execute(new ExecuteAsyncRequest
+                    {
+                        Request = itp.Request
+                    })).AsyncJobId;
+                },
+                PostWorkCallBack = evt2 =>
+                {
+                    if (itp.Request is ImportSolutionRequest isr2)
+                    {
+                        lastImportId = isr2.ImportJobId;
+                    }
+                    else if (itp.Request is StageAndUpgradeRequest saur2)
+                    {
+                        lastImportId = saur2.ImportJobId;
+                    }
+                }
+            });
         }
 
         private void StartExport(ExportToProcess etp)
@@ -892,31 +1014,32 @@ Would you like to open the file now ({e.Result})?
         {
             if (cancelPending)
             {
-                foreach (var etp in toProcessList.OfType<ExportToProcess>())
+                timer.Stop();
+                ToggleWaitMode(false);
+                cancelPending = false;
+                tsbCancel.Text = "Cancel";
+
+                foreach (var etp in toProcessList.OfType<ExportToProcess>().Where(tp => !tp.IsProcessed))
                 {
                     etp.IsProcessed = false;
                     etp.IsProcessing = false;
                     progressItems[etp.Request].Error(DateTime.Now.ToLocalTime(), "Export canceled by user");
                 }
 
-                foreach (var itp in toProcessList.OfType<ImportToProcess>())
+                foreach (var itp in toProcessList.OfType<ImportToProcess>().Where(tp => !tp.IsProcessed))
                 {
                     itp.IsProcessed = false;
                     itp.IsProcessing = false;
-                    progressItems[itp.Request].Error(DateTime.Now.ToLocalTime(), "Export canceled by user");
+                    progressItems[itp.Request].Error(DateTime.Now.ToLocalTime(), "Import canceled by user");
                 }
 
-                foreach (var ptp in toProcessList.OfType<PublishToProcess>())
+                foreach (var ptp in toProcessList.OfType<PublishToProcess>().Where(tp => !tp.IsProcessed))
                 {
                     ptp.IsProcessed = false;
                     ptp.IsProcessing = false;
-                    progressItems[ptp.Request].Error(DateTime.Now.ToLocalTime(), "Export canceled by user");
+                    progressItems[ptp.Request].Error(DateTime.Now.ToLocalTime(), "Publish canceled by user");
                 }
 
-                timer.Stop();
-                ToggleWaitMode(false);
-                cancelPending = false;
-                tsbCancel.Text = "Cancel";
                 return;
             }
 
@@ -928,98 +1051,107 @@ Would you like to open the file now ({e.Result})?
                 }
                 else if (etp.IsProcessing && (oneTimeSettings ?? settings).ExportAsynchronously)
                 {
-                    var task = etp.Detail.GetCrmServiceClient().RetrieveMultiple(new QueryExpression("asyncoperation")
+                    WorkAsync(new WorkAsyncInfo
                     {
-                        NoLock = true,
-                        ColumnSet = new ColumnSet(true),
-                        Criteria =
+                        Message = null,
+                        Work = (bw, evt) =>
+                        {
+                            evt.Result = etp.Detail.GetCrmServiceClient().RetrieveMultiple(new QueryExpression("asyncoperation")
+                            {
+                                NoLock = true,
+                                ColumnSet = new ColumnSet(true),
+                                Criteria =
                                 {
                                     Conditions=
                                     {
                                         new ConditionExpression("asyncoperationid", ConditionOperator.Equal, etp.AsyncOperationId)
                                     }
                                 }
-                    }).Entities.FirstOrDefault();
-
-                    if (task != null)
-                    {
-                        if (task.GetAttributeValue<OptionSetValue>("statecode")?.Value == 3)
+                            }).Entities.FirstOrDefault();
+                        },
+                        PostWorkCallBack = evt =>
                         {
-                            etp.IsProcessed = true;
-                            etp.IsProcessing = false;
-                            if (task.GetAttributeValue<OptionSetValue>("statuscode")?.Value == 30)
+                            var task = (Entity)evt.Result;
+                            if (task != null)
                             {
-                                var req = new OrganizationRequest("DownloadSolutionExportData");
-                                req.Parameters.Add("ExportJobId", etp.ExportJobId);
-                                var response = Service.Execute(req);
-
-                                etp.SolutionContent = (byte[])response["ExportSolutionFile"];
-                                etp.CompletedOn = DateTime.Now;
-
-                                progressItems[etp.Request].Success(etp);
-
-                                progressItems[etp.Request].SolutionFile = etp.SolutionContent;
-
-                                etp.Succeeded = true;
-
-                                if (toProcessList.All(tp => tp.IsProcessed))
+                                if (task.GetAttributeValue<OptionSetValue>("statecode")?.Value == 3)
                                 {
-                                    timer.Stop();
-                                    ToggleWaitMode(false);
-                                }
-
-                                if ((oneTimeSettings ?? settings).AutoExportSolutionsToDisk || etp.IsSolutionDownload)
-                                {
-                                    var fileName = progressItems[etp.Request].SolutionFileName;
-                                    var filePath = Path.Combine((oneTimeSettings ?? settings).AutoExportSolutionsFolderPath, fileName);
-                                    try
+                                    etp.IsProcessed = true;
+                                    etp.IsProcessing = false;
+                                    if (task.GetAttributeValue<OptionSetValue>("statuscode")?.Value == 30)
                                     {
-                                        File.WriteAllBytes(filePath, etp.SolutionContent);
+                                        var req = new OrganizationRequest("DownloadSolutionExportData");
+                                        req.Parameters.Add("ExportJobId", etp.ExportJobId);
+                                        var response = Service.Execute(req);
 
-                                        if (etp.IsSolutionDownload)
+                                        etp.SolutionContent = (byte[])response["ExportSolutionFile"];
+                                        etp.CompletedOn = DateTime.Now;
+
+                                        progressItems[etp.Request].Success(etp);
+
+                                        progressItems[etp.Request].SolutionFile = etp.SolutionContent;
+
+                                        etp.Succeeded = true;
+
+                                        if (toProcessList.All(tp => tp.IsProcessed))
                                         {
-                                            Invoke(new Action(() =>
-                                            {
-                                                MessageBox.Show(this, $@"Solution exported to {filePath}", @"Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                                            }));
+                                            timer.Stop();
+                                            ToggleWaitMode(false);
                                         }
-                                    }
-                                    catch (Exception error)
-                                    {
-                                        Invoke(new Action(() =>
+
+                                        if ((oneTimeSettings ?? settings).AutoExportSolutionsToDisk || etp.IsSolutionDownload)
+                                        {
+                                            var fileName = progressItems[etp.Request].SolutionFileName;
+                                            var filePath = Path.Combine((oneTimeSettings ?? settings).AutoExportSolutionsFolderPath, fileName);
+                                            try
                                             {
-                                                MessageBox.Show(this, $@"Error when saving solution {fileName} to disk.
+                                                File.WriteAllBytes(filePath, etp.SolutionContent);
+
+                                                if (etp.IsSolutionDownload)
+                                                {
+                                                    Invoke(new Action(() =>
+                                                    {
+                                                        MessageBox.Show(this, $@"Solution exported to {filePath}", @"Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                                                    }));
+                                                }
+                                            }
+                                            catch (Exception error)
+                                            {
+                                                Invoke(new Action(() =>
+                                                {
+                                                    MessageBox.Show(this, $@"Error when saving solution {fileName} to disk.
 
 {error.Message}", @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                                            }));
+                                                }));
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        progressItems[etp.Request].Error(task.GetAttributeValue<DateTime>("completedon").ToLocalTime());
+                                        ToggleWaitMode(false);
+                                        timer.Stop();
+                                        pForm.ShowRetryButton(progressItems[etp.Request]);
+                                    }
+
+                                    if (toProcessList.All(tp => tp.IsProcessed))
+                                    {
+                                        timer.Stop();
+                                        ToggleWaitMode(false);
                                     }
                                 }
-                            }
-                            else
-                            {
-                                progressItems[etp.Request].Error(task.GetAttributeValue<DateTime>("completedon").ToLocalTime());
-                                ToggleWaitMode(false);
-                                timer.Stop();
-                                pForm.ShowRetryButton(progressItems[etp.Request]);
-                            }
-
-                            if (toProcessList.All(tp => tp.IsProcessed))
-                            {
-                                timer.Stop();
-                                ToggleWaitMode(false);
+                                else
+                                {
+                                    progressItems[etp.Request]
+                                        .ReportProgress(task.GetAttributeValue<double>("progress"), etp);
+                                }
                             }
                         }
-                        else
-                        {
-                            progressItems[etp.Request]
-                                .ReportProgress(task.GetAttributeValue<double>("progress"), etp);
-                        }
-                    }
+                    });
                 }
             }
 
-            foreach (var itp in toProcessList.OfType<ImportToProcess>()
-                    .Where(i => /*i.Export == etp && */i.Export.IsProcessed && i.Export.Succeeded))
+            foreach (var itp in toProcessList.OfType<ImportToProcess>().Where(i => i.Export.IsProcessed && i.Export.Succeeded))
             {
                 if (itp.Previous != null && !itp.Previous.IsProcessed || itp.IsProcessed)
                 {
@@ -1036,219 +1168,236 @@ Would you like to open the file now ({e.Result})?
                     {
                         progressItems[itp.Request].CheckDependencies();
 
-                        try
+                        WorkAsync(new WorkAsyncInfo
                         {
-                            RetrieveMissingComponentsResponse response = (RetrieveMissingComponentsResponse)itp.Detail.GetCrmServiceClient().Execute(new RetrieveMissingComponentsRequest
+                            Message = null,
+                            Work = (bw, evt) =>
                             {
-                                CustomizationFile = itp.Export.SolutionContent
-                            });
-
-                            if (response.MissingComponents != null && response.MissingComponents.Any())
-                            {
-                                if (mcControl == null)
+                                evt.Result = (RetrieveMissingComponentsResponse)itp.Detail.GetCrmServiceClient().Execute(new RetrieveMissingComponentsRequest
                                 {
-                                    mcControl = new MissingComponentsControl();
-                                    mcControl.Name = "MissingComponentsControl1";
-                                    mcControl.OnClose += (s, evt) => { Controls.Remove(mcControl); };
+                                    CustomizationFile = itp.Export.SolutionContent
+                                });
+                            },
+                            PostWorkCallBack = evt =>
+                            {
+                                if (evt.Error != null)
+                                {
+                                    Invoke(new Action(() =>
+                                    {
+                                        if (MessageBox.Show(this, $"An error when checking for missing components:\n\n{evt.Error.Message}\n\nDo you want to continue to import?", "Error", MessageBoxButtons.YesNo, MessageBoxIcon.Error) == DialogResult.No)
+                                        {
+                                            progressItems[itp.Request].Error(DateTime.Now, "An error when checking for missing components");
+                                            itp.IsProcessing = false;
+                                            ToggleWaitMode(false);
+                                            timer.Stop();
+                                            pForm.ShowRetryButton(progressItems[itp.Request]);
+
+                                            return;
+                                        }
+                                    }));
                                 }
 
-                                Invoke(new Action(() =>
+                                var response = (RetrieveMissingComponentsResponse)evt.Result;
+                                if (response.MissingComponents != null && response.MissingComponents.Any())
                                 {
-                                    mcControl.ComponentsTypes = solutionComponentTypes;
-                                    mcControl.Components = response.MissingComponents;
-                                    mcControl.ShowData();
-                                    Controls.Add(mcControl);
-                                    mcControl.DisplayCentered();
-                                    mcControl.BringToFront();
-                                }));
-
-                                progressItems[itp.Request].Error(DateTime.Now, "Your solution has missing components in the target environment");
-                                itp.IsProcessing = false;
-                                ToggleWaitMode(false);
-                                timer.Stop();
-                                pForm.ShowRetryButton(progressItems[itp.Request]);
-
-                                if ((oneTimeSettings ?? settings).UseWindowsToastNotification)
-                                {
-                                    try
+                                    if (mcControl == null)
                                     {
-                                        new ToastContentBuilder()
-                                           .AddArgument("action", "viewDetails")
-                                           .AddHeader("XTB.TTO.STT", "Solution Transfer Tool", "")
-                                           .AddText($"{itp.Solution.GetAttributeValue<string>("friendlyname")} {itp.Solution.GetAttributeValue<string>("version")}")
-                                           .AddText("The solution has missing dependencies.")
-                                           .AddArgument("pid", Process.GetCurrentProcess().Id)
-                                           .Show();
+                                        mcControl = new MissingComponentsControl();
+                                        mcControl.Name = "MissingComponentsControl1";
+                                        mcControl.OnClose += (s, evt2) => { Controls.Remove(mcControl); };
                                     }
-                                    catch
-                                    {
-                                        // Ignore to not fail if XrmToolBox does not implement Toast properly
-                                    }
-                                }
 
-                                return;
-                            }
-                        }
-                        catch (Exception error)
-                        {
-                            Invoke(new Action(() =>
-                            {
-                                if (MessageBox.Show(this, $"An error when checking for missing components:\n\n{error.Message}", "Error", MessageBoxButtons.YesNo, MessageBoxIcon.Error) == DialogResult.No)
-                                {
-                                    progressItems[itp.Request].Error(DateTime.Now, "An error when checking for missing components");
+                                    Invoke(new Action(() =>
+                                    {
+                                        mcControl.ComponentsTypes = solutionComponentTypes;
+                                        mcControl.Components = response.MissingComponents;
+                                        mcControl.ShowData();
+                                        Controls.Add(mcControl);
+                                        mcControl.DisplayCentered();
+                                        mcControl.BringToFront();
+                                    }));
+
+                                    progressItems[itp.Request].Error(DateTime.Now, "Your solution has missing components in the target environment");
                                     itp.IsProcessing = false;
                                     ToggleWaitMode(false);
                                     timer.Stop();
                                     pForm.ShowRetryButton(progressItems[itp.Request]);
 
+                                    if ((oneTimeSettings ?? settings).UseWindowsToastNotification)
+                                    {
+                                        try
+                                        {
+                                            new ToastContentBuilder()
+                                               .AddArgument("action", "viewDetails")
+                                               .AddHeader("XTB.TTO.STT", "Solution Transfer Tool", "")
+                                               .AddText($"{itp.Solution.GetAttributeValue<string>("friendlyname")} {itp.Solution.GetAttributeValue<string>("version")}")
+                                               .AddText("The solution has missing dependencies.")
+                                               .AddArgument("pid", Process.GetCurrentProcess().Id)
+                                               .Show();
+                                        }
+                                        catch
+                                        {
+                                            // Ignore to not fail if XrmToolBox does not implement Toast properly
+                                        }
+                                    }
+
                                     return;
                                 }
-                            }));
-                        }
+
+                                RunImport(itp);
+                            }
+                        });
                     }
-
-                    progressItems[itp.Request].Start();
-
-                    if (itp.Request is ImportSolutionRequest isr)
+                    else
                     {
-                        isr.CustomizationFile = itp.Export.SolutionContent;
+                        RunImport(itp);
                     }
-                    else if (itp.Request is StageAndUpgradeRequest saur)
-                    {
-                        saur.CustomizationFile = itp.Export.SolutionContent;
-                    }
-
-                    itp.AsyncOperationId = ((ExecuteAsyncResponse)itp.Detail.GetCrmServiceClient().Execute(new ExecuteAsyncRequest
-                    {
-                        Request = itp.Request
-                    })).AsyncJobId;
-
-                    lastImportId = ((ImportSolutionRequest)itp.Request).ImportJobId;
                 }
                 else if (itp.IsProcessing)
                 {
-                    var task = itp.Detail.GetCrmServiceClient().RetrieveMultiple(new QueryExpression("asyncoperation")
+                    WorkAsync(new WorkAsyncInfo
                     {
-                        NoLock = true,
-                        ColumnSet = new ColumnSet(true),
-                        Criteria =
+                        Message = null,
+                        Work = (bw, evt) =>
+                        {
+                            evt.Result = itp.Detail.GetCrmServiceClient().RetrieveMultiple(new QueryExpression("asyncoperation")
+                            {
+                                NoLock = true,
+                                ColumnSet = new ColumnSet(true),
+                                Criteria =
                                 {
                                     Conditions=
                                     {
                                         new ConditionExpression("asyncoperationid", ConditionOperator.Equal, itp.AsyncOperationId)
                                     }
                                 }
-                    }).Entities.FirstOrDefault();
-
-                    if (task != null)
-                    {
-                        if (task.GetAttributeValue<OptionSetValue>("statecode")?.Value == 3)
+                            }).Entities.FirstOrDefault();
+                        },
+                        PostWorkCallBack = evt =>
                         {
-                            itp.IsProcessed = true;
-                            itp.IsProcessing = false;
-                            itp.CompletedOn = DateTime.Now;
-                            if (task.GetAttributeValue<OptionSetValue>("statuscode")?.Value == 30)
+                            var task = (Entity)evt.Result;
+                            if (task != null)
                             {
-                                progressItems[itp.Request].Success(itp);
-                                itp.Succeeded = true;
-
-                                Invoke(new Action(() =>
+                                if (task.GetAttributeValue<OptionSetValue>("statecode")?.Value == 3)
                                 {
-                                    mForm.SetTargetSolutionVersion(itp.Solution, itp.Detail);
-                                }));
+                                    itp.IsProcessed = true;
+                                    itp.IsProcessing = false;
+                                    itp.CompletedOn = DateTime.Now;
+                                    if (task.GetAttributeValue<OptionSetValue>("statuscode")?.Value == 30)
+                                    {
+                                        progressItems[itp.Request].Success(itp);
+                                        itp.Succeeded = true;
 
-                                if ((oneTimeSettings ?? settings).UseWindowsToastNotification)
-                                {
-                                    try
-                                    {
-                                        new ToastContentBuilder()
-                                           .AddArgument("action", "viewDetails")
-                                           .AddHeader("XTB.TTO.STT", "Solution Transfer Tool", "")
-                                           .AddText($"{itp.Solution.GetAttributeValue<string>("friendlyname")} {itp.Solution.GetAttributeValue<string>("version")}")
-                                           .AddText("Imported successfully")
-                                           .AddText($"To {itp.Detail.ConnectionName}")
-                                           .AddArgument("pid", Process.GetCurrentProcess().Id)
-                                           .AddAppLogoOverride(new Uri(Path.Combine(Path.GetTempPath(), "xtb.stt.success.png")))
-                                           .Show(toast =>
-                                           {
-                                               toast.ExpirationTime = DateTime.Now.AddMinutes(5);
-                                           });
-                                    }
-                                    catch (Exception error)
-                                    {
-                                        // Ignore to not fail if XrmToolBox does not implement Toast properly
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                progressItems[itp.Request].Error(task.GetAttributeValue<DateTime>("completedon").ToLocalTime());
-                                ToggleWaitMode(false);
-                                timer.Stop();
-                                pForm.ShowRetryButton(progressItems[itp.Request]);
-
-                                if ((oneTimeSettings ?? settings).UseWindowsToastNotification)
-                                {
-                                    try
-                                    {
-                                        new ToastContentBuilder()
-                                       .AddArgument("action", "viewDetails")
-                                       .AddHeader("XTB.TTO.STT", "Solution Transfer Tool", "")
-                                       .AddText($"{itp.Solution.GetAttributeValue<string>("friendlyname")} {itp.Solution.GetAttributeValue<string>("version")}")
-                                       .AddText($"To {itp.Detail.ConnectionName}")
-                                       .AddText("Failed to import")
-                                       .AddArgument("pid", Process.GetCurrentProcess().Id)
-                                       .AddAppLogoOverride(new Uri(Path.Combine(Path.GetTempPath(), "xtb.stt.error.png")))
-                                       .Show(toast =>
-                                       {
-                                           toast.ExpirationTime = DateTime.Now.AddMinutes(5);
-                                       });
-                                    }
-                                    catch
-                                    {
-                                        // Ignore to not fail if XrmToolBox does not implement Toast properly
-                                    }
-                                }
-                            }
-
-                            if (toProcessList.All(tp => tp.IsProcessed))
-                            {
-                                timer.Stop();
-                                ToggleWaitMode(false);
-                            }
-                        }
-                        else
-                        {
-                            Guid importJobId = Guid.Empty;
-                            if (itp.Request is ImportSolutionRequest isr)
-                            {
-                                importJobId = isr.ImportJobId;
-                            }
-                            else if (itp.Request is StageAndUpgradeRequest saur)
-                            {
-                                importJobId = saur.ImportJobId;
-                            }
-
-                            var job = itp.Detail.GetCrmServiceClient().RetrieveMultiple(new QueryExpression("importjob")
-                            {
-                                NoLock = true,
-                                ColumnSet = new ColumnSet(true),
-                                Criteria =
-                                    {
-                                        Conditions=
+                                        Invoke(new Action(() =>
                                         {
-                                            new ConditionExpression("importjobid", ConditionOperator.Equal, importJobId)
+                                            mForm.SetTargetSolutionVersion(itp.Solution, itp.Detail);
+                                        }));
+
+                                        if ((oneTimeSettings ?? settings).UseWindowsToastNotification)
+                                        {
+                                            try
+                                            {
+                                                new ToastContentBuilder()
+                                                   .AddArgument("action", "viewDetails")
+                                                   .AddHeader("XTB.TTO.STT", "Solution Transfer Tool", "")
+                                                   .AddText($"{itp.Solution.GetAttributeValue<string>("friendlyname")} {itp.Solution.GetAttributeValue<string>("version")}")
+                                                   .AddText("Imported successfully")
+                                                   .AddText($"To {itp.Detail.ConnectionName}")
+                                                   .AddArgument("pid", Process.GetCurrentProcess().Id)
+                                                   .AddAppLogoOverride(new Uri(Path.Combine(Path.GetTempPath(), "xtb.stt.success.png")))
+                                                   .Show(toast =>
+                                                   {
+                                                       toast.ExpirationTime = DateTime.Now.AddMinutes(5);
+                                                   });
+                                            }
+                                            catch (Exception error)
+                                            {
+                                                // Ignore to not fail if XrmToolBox does not implement Toast properly
+                                            }
                                         }
                                     }
-                            }).Entities.FirstOrDefault();
+                                    else
+                                    {
+                                        progressItems[itp.Request].Error(task.GetAttributeValue<DateTime>("completedon").ToLocalTime());
+                                        ToggleWaitMode(false);
+                                        timer.Stop();
+                                        pForm.ShowRetryButton(progressItems[itp.Request]);
 
-                            if (job != null)
-                            {
-                                progressItems[itp.Request]
-                                    .ReportProgress(job.GetAttributeValue<double>("progress"), itp, job.GetAttributeValue<string>("operationcontext") == "Upgrade");
+                                        if ((oneTimeSettings ?? settings).UseWindowsToastNotification)
+                                        {
+                                            try
+                                            {
+                                                new ToastContentBuilder()
+                                               .AddArgument("action", "viewDetails")
+                                               .AddHeader("XTB.TTO.STT", "Solution Transfer Tool", "")
+                                               .AddText($"{itp.Solution.GetAttributeValue<string>("friendlyname")} {itp.Solution.GetAttributeValue<string>("version")}")
+                                               .AddText($"To {itp.Detail.ConnectionName}")
+                                               .AddText("Failed to import")
+                                               .AddArgument("pid", Process.GetCurrentProcess().Id)
+                                               .AddAppLogoOverride(new Uri(Path.Combine(Path.GetTempPath(), "xtb.stt.error.png")))
+                                               .Show(toast =>
+                                               {
+                                                   toast.ExpirationTime = DateTime.Now.AddMinutes(5);
+                                               });
+                                            }
+                                            catch
+                                            {
+                                                // Ignore to not fail if XrmToolBox does not implement Toast properly
+                                            }
+                                        }
+                                    }
+
+                                    if (toProcessList.All(tp => tp.IsProcessed))
+                                    {
+                                        timer.Stop();
+                                        ToggleWaitMode(false);
+                                    }
+                                }
+                                else
+                                {
+                                    Guid importJobId = Guid.Empty;
+                                    if (itp.Request is ImportSolutionRequest isr)
+                                    {
+                                        importJobId = isr.ImportJobId;
+                                    }
+                                    else if (itp.Request is StageAndUpgradeRequest saur)
+                                    {
+                                        importJobId = saur.ImportJobId;
+                                    }
+
+                                    WorkAsync(new WorkAsyncInfo
+                                    {
+                                        Message = null,
+                                        Work = (bw2, evt2) =>
+                                        {
+                                            evt2.Result = itp.Detail.GetCrmServiceClient().RetrieveMultiple(new QueryExpression("importjob")
+                                            {
+                                                NoLock = true,
+                                                ColumnSet = new ColumnSet(true),
+                                                Criteria =
+                                                {
+                                                    Conditions=
+                                                    {
+                                                        new ConditionExpression("importjobid", ConditionOperator.Equal, importJobId)
+                                                    }
+                                                }
+                                            }).Entities.FirstOrDefault();
+                                        },
+                                        PostWorkCallBack = evt2 =>
+                                        {
+                                            var job = (Entity)evt2.Result;
+                                            if (job != null)
+                                            {
+                                                progressItems[itp.Request]
+                                                    .ReportProgress(job.GetAttributeValue<double>("progress"), itp, job.GetAttributeValue<string>("operationcontext") == "Upgrade");
+                                            }
+                                        }
+                                    }
+                                    );
+                                }
                             }
                         }
-                    }
+                    });
                 }
             }
 
@@ -1306,6 +1455,11 @@ Would you like to open the file now ({e.Result})?
                     timer.Stop();
                     ToggleWaitMode(false);
                 }
+            }
+
+            if (toProcessList.All(p => p.IsProcessed))
+            {
+                timer.Stop();
             }
         }
 

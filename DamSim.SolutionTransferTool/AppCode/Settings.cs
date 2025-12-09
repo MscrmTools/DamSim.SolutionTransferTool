@@ -14,7 +14,10 @@ namespace DamSim.SolutionTransferTool.AppCode
         StageForUpgrade,
 
         [Description("Upgrade")]
-        Upgrade
+        Upgrade,
+
+        //[Description("Upgrade in one step")]
+        //UpgradeOneStep
     }
 
     public enum UpdateVersionEnum
@@ -75,6 +78,11 @@ namespace DamSim.SolutionTransferTool.AppCode
         [DisplayName("Convert to managed")]
         [Description("Direct the system to convert any matching unmanaged customizations into your managed solution")]
         public bool ConvertToManaged { get; set; }
+
+        [Category("Import Settings")]
+        [DisplayName("Deploy missing packages")]
+        [Description("Deploy missing packages before Solution import")]
+        public bool DeployMissingPackagesBeforeSolutionImport { get; set; } = true;
 
         [Category("Export Settings")]
         [DisplayName("Export asynchronously")]
