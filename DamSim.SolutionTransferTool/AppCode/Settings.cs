@@ -16,8 +16,8 @@ namespace DamSim.SolutionTransferTool.AppCode
         [Description("Upgrade")]
         Upgrade,
 
-        //[Description("Upgrade in one step")]
-        //UpgradeOneStep
+        [Description("Upgrade in one step")]
+        UpgradeOneStep
     }
 
     public enum UpdateVersionEnum
@@ -150,7 +150,7 @@ namespace DamSim.SolutionTransferTool.AppCode
 Stage for upgrade: Install a new version of the solution and keep the old one
 Upgrade: Install a new version of the solution and remove missing components")]
         [TypeConverter(typeof(VersionTypeConverter))]
-        public ImportModeEnum ImportMode { get; set; }
+        public ImportModeEnum ImportMode { get; set; } = ImportModeEnum.UpgradeOneStep;
 
         [Category("Export Settings")]
         [DisplayName("Export as managed")]

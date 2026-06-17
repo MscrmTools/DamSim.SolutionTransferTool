@@ -29,9 +29,12 @@
         private void InitializeComponent()
         {
             this.pnlTop = new System.Windows.Forms.Panel();
+            this.lblSummaryHeader = new System.Windows.Forms.Label();
+            this.label1 = new System.Windows.Forms.Label();
             this.pnlBottom = new System.Windows.Forms.Panel();
             this.scDoNotShow = new XrmToolBox.Controls.SwitchControl();
             this.lblDoNotShow = new System.Windows.Forms.Label();
+            this.btnStart = new System.Windows.Forms.Button();
             this.pnlMain = new System.Windows.Forms.Panel();
             this.pnlSolutions = new System.Windows.Forms.Panel();
             this.lvSolutions = new System.Windows.Forms.ListView();
@@ -44,6 +47,8 @@
             this.scSkipNewVersionNumber = new XrmToolBox.Controls.SwitchControl();
             this.lblSkipNewVersionNumber = new System.Windows.Forms.Label();
             this.toolStrip1 = new System.Windows.Forms.ToolStrip();
+            this.tsbUp = new System.Windows.Forms.ToolStripButton();
+            this.tsbDown = new System.Windows.Forms.ToolStripButton();
             this.pnlImportMode = new System.Windows.Forms.Panel();
             this.ddImportMode = new XrmToolBox.Controls.DropdownSettingsControl();
             this.lblImportMode = new System.Windows.Forms.Label();
@@ -65,11 +70,6 @@
             this.pnlExportMode = new System.Windows.Forms.Panel();
             this.scImportAsManaged = new XrmToolBox.Controls.SwitchControl();
             this.lblExportMode = new System.Windows.Forms.Label();
-            this.label1 = new System.Windows.Forms.Label();
-            this.lblSummaryHeader = new System.Windows.Forms.Label();
-            this.tsbUp = new System.Windows.Forms.ToolStripButton();
-            this.tsbDown = new System.Windows.Forms.ToolStripButton();
-            this.btnStart = new System.Windows.Forms.Button();
             this.pnlTop.SuspendLayout();
             this.pnlBottom.SuspendLayout();
             this.pnlMain.SuspendLayout();
@@ -96,6 +96,27 @@
             this.pnlTop.Padding = new System.Windows.Forms.Padding(10);
             this.pnlTop.Size = new System.Drawing.Size(1004, 90);
             this.pnlTop.TabIndex = 0;
+            // 
+            // lblSummaryHeader
+            // 
+            this.lblSummaryHeader.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblSummaryHeader.Font = new System.Drawing.Font("Segoe UI Light", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblSummaryHeader.Location = new System.Drawing.Point(10, 47);
+            this.lblSummaryHeader.Name = "lblSummaryHeader";
+            this.lblSummaryHeader.Size = new System.Drawing.Size(984, 33);
+            this.lblSummaryHeader.TabIndex = 2;
+            this.lblSummaryHeader.Text = "This is a summary of the settings used to transfer selected solutions. You can ch" +
+    "ange some settings now";
+            // 
+            // label1
+            // 
+            this.label1.Dock = System.Windows.Forms.DockStyle.Top;
+            this.label1.Font = new System.Drawing.Font("Segoe UI Light", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label1.Location = new System.Drawing.Point(10, 10);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(984, 37);
+            this.label1.TabIndex = 1;
+            this.label1.Text = "Pre Import Summary";
             // 
             // pnlBottom
             // 
@@ -130,6 +151,22 @@
             this.lblDoNotShow.TabIndex = 2;
             this.lblDoNotShow.Text = "Do not show this screen";
             this.lblDoNotShow.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // btnStart
+            // 
+            this.btnStart.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnStart.Dock = System.Windows.Forms.DockStyle.Right;
+            this.btnStart.Image = global::DamSim.SolutionTransferTool.Properties.Resources.Startup32;
+            this.btnStart.ImageAlign = System.Drawing.ContentAlignment.MiddleRight;
+            this.btnStart.Location = new System.Drawing.Point(874, 10);
+            this.btnStart.Name = "btnStart";
+            this.btnStart.Padding = new System.Windows.Forms.Padding(20, 0, 0, 0);
+            this.btnStart.Size = new System.Drawing.Size(120, 41);
+            this.btnStart.TabIndex = 1;
+            this.btnStart.Text = "Run";
+            this.btnStart.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.btnStart.UseVisualStyleBackColor = true;
+            this.btnStart.Click += new System.EventHandler(this.btnStart_Click);
             // 
             // pnlMain
             // 
@@ -177,6 +214,7 @@
             this.lvSolutions.TabIndex = 9;
             this.lvSolutions.UseCompatibleStateImageBehavior = false;
             this.lvSolutions.View = System.Windows.Forms.View.Details;
+            this.lvSolutions.SelectedIndexChanged += new System.EventHandler(this.lvSolutions_SelectedIndexChanged);
             // 
             // chFriendlyName
             // 
@@ -212,7 +250,7 @@
             // lblOnlyCheckSolWillBeUpdated
             // 
             this.lblOnlyCheckSolWillBeUpdated.Dock = System.Windows.Forms.DockStyle.Right;
-            this.lblOnlyCheckSolWillBeUpdated.Location = new System.Drawing.Point(640, 0);
+            this.lblOnlyCheckSolWillBeUpdated.Location = new System.Drawing.Point(584, 0);
             this.lblOnlyCheckSolWillBeUpdated.Name = "lblOnlyCheckSolWillBeUpdated";
             this.lblOnlyCheckSolWillBeUpdated.Size = new System.Drawing.Size(400, 34);
             this.lblOnlyCheckSolWillBeUpdated.TabIndex = 4;
@@ -253,6 +291,28 @@
             this.toolStrip1.TabIndex = 0;
             this.toolStrip1.Text = "toolStrip1";
             // 
+            // tsbUp
+            // 
+            this.tsbUp.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.tsbUp.Enabled = false;
+            this.tsbUp.Image = global::DamSim.SolutionTransferTool.Properties.Resources.Arrow_Up_icon;
+            this.tsbUp.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.tsbUp.Name = "tsbUp";
+            this.tsbUp.Size = new System.Drawing.Size(29, 28);
+            this.tsbUp.Text = "Up";
+            this.tsbUp.Click += new System.EventHandler(this.tsbUp_Click);
+            // 
+            // tsbDown
+            // 
+            this.tsbDown.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.tsbDown.Enabled = false;
+            this.tsbDown.Image = global::DamSim.SolutionTransferTool.Properties.Resources.Arrow_Down_icon;
+            this.tsbDown.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.tsbDown.Name = "tsbDown";
+            this.tsbDown.Size = new System.Drawing.Size(29, 28);
+            this.tsbDown.Text = "Down";
+            this.tsbDown.Click += new System.EventHandler(this.tsbDown_Click);
+            // 
             // pnlImportMode
             // 
             this.pnlImportMode.Controls.Add(this.ddImportMode);
@@ -277,6 +337,7 @@
             this.ddImportMode.TabIndex = 2;
             this.ddImportMode.Title = null;
             this.ddImportMode.Value = null;
+            this.ddImportMode.OnSettingsPropertyChanged += new System.EventHandler<XrmToolBox.AppCode.SettingsPropertyEventArgs>(this.ddImportMode_OnSettingsPropertyChanged);
             // 
             // lblImportMode
             // 
@@ -481,63 +542,6 @@
             this.lblExportMode.TabIndex = 3;
             this.lblExportMode.Text = "Import as managed";
             this.lblExportMode.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            // 
-            // label1
-            // 
-            this.label1.Dock = System.Windows.Forms.DockStyle.Top;
-            this.label1.Font = new System.Drawing.Font("Segoe UI Light", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label1.Location = new System.Drawing.Point(10, 10);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(984, 37);
-            this.label1.TabIndex = 1;
-            this.label1.Text = "Pre Import Summary";
-            // 
-            // lblSummaryHeader
-            // 
-            this.lblSummaryHeader.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lblSummaryHeader.Font = new System.Drawing.Font("Segoe UI Light", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblSummaryHeader.Location = new System.Drawing.Point(10, 47);
-            this.lblSummaryHeader.Name = "lblSummaryHeader";
-            this.lblSummaryHeader.Size = new System.Drawing.Size(984, 33);
-            this.lblSummaryHeader.TabIndex = 2;
-            this.lblSummaryHeader.Text = "This is a summary of the settings used to transfer selected solutions. You can ch" +
-    "ange some settings now";
-            // 
-            // tsbUp
-            // 
-            this.tsbUp.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.tsbUp.Image = global::DamSim.SolutionTransferTool.Properties.Resources.Arrow_Up_icon;
-            this.tsbUp.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.tsbUp.Name = "tsbUp";
-            this.tsbUp.Size = new System.Drawing.Size(29, 28);
-            this.tsbUp.Text = "Up";
-            this.tsbUp.Click += new System.EventHandler(this.tsbUp_Click);
-            // 
-            // tsbDown
-            // 
-            this.tsbDown.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.tsbDown.Image = global::DamSim.SolutionTransferTool.Properties.Resources.Arrow_Down_icon;
-            this.tsbDown.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.tsbDown.Name = "tsbDown";
-            this.tsbDown.Size = new System.Drawing.Size(29, 28);
-            this.tsbDown.Text = "Down";
-            this.tsbDown.Click += new System.EventHandler(this.tsbDown_Click);
-            // 
-            // btnStart
-            // 
-            this.btnStart.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.btnStart.Dock = System.Windows.Forms.DockStyle.Right;
-            this.btnStart.Image = global::DamSim.SolutionTransferTool.Properties.Resources.Startup32;
-            this.btnStart.ImageAlign = System.Drawing.ContentAlignment.MiddleRight;
-            this.btnStart.Location = new System.Drawing.Point(850, 10);
-            this.btnStart.Name = "btnStart";
-            this.btnStart.Size = new System.Drawing.Size(120, 41);
-            this.btnStart.TabIndex = 1;
-            this.btnStart.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            this.btnStart.Text = "Run";
-            this.btnStart.Padding = new System.Windows.Forms.Padding(20, 0, 0, 0);
-            this.btnStart.UseVisualStyleBackColor = true;
-            this.btnStart.Click += new System.EventHandler(this.btnStart_Click);
             // 
             // PreImportSummaryForm
             // 

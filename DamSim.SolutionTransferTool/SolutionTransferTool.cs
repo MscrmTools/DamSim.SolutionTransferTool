@@ -677,13 +677,13 @@ Would you like to open the file now ({e.Result})?
             var isNull = request == null;
             if (isNull)
             {
-                request = (oneTimeSettings ?? settings).ImportMode == ImportModeEnum.Upgrade && !isPatch ? new StageAndUpgradeRequest() : (OrganizationRequest)new ImportSolutionRequest();
+                request = ((oneTimeSettings ?? settings).ImportMode == ImportModeEnum.Upgrade || (oneTimeSettings ?? settings).ImportMode == ImportModeEnum.UpgradeOneStep) && !isPatch ? new StageAndUpgradeRequest() : (OrganizationRequest)new ImportSolutionRequest();
             }
 
             if (request is ImportSolutionRequest isr)
             {
                 isr.ConvertToManaged = (oneTimeSettings ?? settings).ConvertToManaged;
-                isr.OverwriteUnmanagedCustomizations = (oneTimeSettings ?? settings).OverwriteUnmanagedCustomizations;
+                isr.OverwriteUnmanagedCustomizations = (oneTimeSettings ?? settings).ImportMode == ImportModeEnum.UpgradeOneStep ? false : (oneTimeSettings ?? settings).OverwriteUnmanagedCustomizations;
                 isr.PublishWorkflows = (oneTimeSettings ?? settings).PublishWorkflows;
                 isr.ImportJobId = Guid.NewGuid();
 
@@ -804,11 +804,11 @@ Would you like to open the file now ({e.Result})?
                         Criteria = new FilterExpression
                         {
                             Conditions =
-                    {
-                        new ConditionExpression("ismanaged", ConditionOperator.Equal, false),
-                        new ConditionExpression("isvisible", ConditionOperator.Equal, true),
-                        new ConditionExpression("uniquename", ConditionOperator.NotEqual, "Default")
-                    }
+                            {
+                                new ConditionExpression("ismanaged", ConditionOperator.Equal, false),
+                                new ConditionExpression("isvisible", ConditionOperator.Equal, true),
+                                new ConditionExpression("uniquename", ConditionOperator.NotEqual, "Default")
+                            }
                         }
                     };
 
@@ -823,18 +823,18 @@ Would you like to open the file now ({e.Result})?
                             JoinOperator = JoinOperator.LeftOuter,
                             EntityAlias = "component",
                             LinkEntities =
-                    {
-                        new LinkEntity
-                        {
-                            LinkFromEntityName = "solutioncomponent",
-                            LinkFromAttributeName=  "objectid",
-                            LinkToAttributeName = "connectionreferenceid",
-                            LinkToEntityName = "connectionreference",
-                            Columns = new ColumnSet("connectionreferencedisplayname","connectionreferencelogicalname"),
-                            EntityAlias = "connectionreference",
-                            JoinOperator = JoinOperator.LeftOuter,
-                        }
-                    }
+                            {
+                                new LinkEntity
+                                {
+                                    LinkFromEntityName = "solutioncomponent",
+                                    LinkFromAttributeName=  "objectid",
+                                    LinkToAttributeName = "connectionreferenceid",
+                                    LinkToEntityName = "connectionreference",
+                                    Columns = new ColumnSet("connectionreferencedisplayname","connectionreferencelogicalname"),
+                                    EntityAlias = "connectionreference",
+                                    JoinOperator = JoinOperator.LeftOuter,
+                                }
+                            }
                         });
                     }
 

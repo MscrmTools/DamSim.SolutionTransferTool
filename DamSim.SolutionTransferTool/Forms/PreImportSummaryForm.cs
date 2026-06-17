@@ -14,15 +14,15 @@ namespace DamSim.SolutionTransferTool.Forms
         {
             InitializeComponent();
 
+            ddImportMode.EnumType = typeof(ImportModeEnum);
+            ddImportMode.Value = importSettings.ImportMode;
             scCheckMissingDeps.Checked = importSettings.CheckForMissingDependencies;
             scConvertToManaged.Checked = importSettings.ConvertToManaged;
             scImportAsManaged.Checked = importSettings.Managed;
             scOverwriteUnmanaged.Checked = importSettings.OverwriteUnmanagedCustomizations;
             scPublishWorkflows.Checked = importSettings.PublishWorkflows;
             scSkipProductUpdateDeps.Checked = importSettings.SkipProductUpdateDependencies;
-            ddImportMode.EnumType = typeof(ImportModeEnum);
-            ddImportMode.Value = importSettings.ImportMode;
-
+           
             if (solutions != null && solutions.Count > 0)
             {
                 foreach (var solution in solutions)
@@ -53,18 +53,30 @@ namespace DamSim.SolutionTransferTool.Forms
                 ((Entity)item.Tag)["sortorder"] = item.Index;
             }
 
+            currentSettings.ImportMode = (ImportModeEnum)ddImportMode.Value;
             currentSettings.CheckForMissingDependencies = scCheckMissingDeps.Checked;
             currentSettings.ConvertToManaged = scConvertToManaged.Checked;
             currentSettings.Managed = scImportAsManaged.Checked;
             currentSettings.OverwriteUnmanagedCustomizations = scOverwriteUnmanaged.Checked;
             currentSettings.PublishWorkflows = scPublishWorkflows.Checked;
             currentSettings.SkipProductUpdateDependencies = scSkipProductUpdateDeps.Checked;
-            currentSettings.ImportMode = (ImportModeEnum)ddImportMode.Value;
 
             currentSettings.ShowPreImportSummary = !scDoNotShow.Checked;
 
             DialogResult = DialogResult.OK;
             Close();
+        }
+
+        private void ddImportMode_OnSettingsPropertyChanged(object sender, XrmToolBox.AppCode.SettingsPropertyEventArgs e)
+        {
+            scImportAsManaged_OnCheckedChanged(sender, EventArgs.Empty);
+            scOverwriteUnmanaged.Checked = currentSettings.OverwriteUnmanagedCustomizations && (ImportModeEnum)ddImportMode?.Value != ImportModeEnum.UpgradeOneStep;
+        }
+
+        private void lvSolutions_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            tsbUp.Enabled = lvSolutions.SelectedItems.Count > 0 && lvSolutions.SelectedItems[0].Index != 0;
+            tsbDown.Enabled = lvSolutions.SelectedItems.Count > 0 && lvSolutions.SelectedItems[0].Index != lvSolutions.Items.Count - 1;
         }
 
         private void scImportAsManaged_OnCheckedChanged(object sender, System.EventArgs e)
@@ -73,7 +85,7 @@ namespace DamSim.SolutionTransferTool.Forms
 
             pnlConvertToManaged.Visible = isManaged;
             pnlImportMode.Visible = isManaged;
-            pnlOverwriteUnmanaged.Visible = isManaged;
+            pnlOverwriteUnmanaged.Visible = isManaged && ddImportMode?.Value != null && (ImportModeEnum)ddImportMode?.Value != ImportModeEnum.UpgradeOneStep;
             pnlPublishWorkflows.Visible = !isManaged;
         }
 
