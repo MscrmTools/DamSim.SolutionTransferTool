@@ -812,6 +812,13 @@ Would you like to open the file now ({e.Result})?
                         }
                     };
 
+                    var uniqueSolutions = new List<Entity>();
+                    var solutions = sourceService.RetrieveMultiple(sourceSolutionsQuery);
+                    foreach (var solution in solutions.Entities)
+                    {
+                        uniqueSolutions.Add(solution);
+                    }
+
                     if (solutionComponentTypes.Count > 0)
                     {
                         sourceSolutionsQuery.LinkEntities.Add(new LinkEntity
@@ -820,7 +827,7 @@ Would you like to open the file now ({e.Result})?
                             LinkFromAttributeName = "solutionid",
                             LinkToAttributeName = "solutionid",
                             LinkToEntityName = "solutioncomponent",
-                            JoinOperator = JoinOperator.LeftOuter,
+                            JoinOperator = JoinOperator.Inner,
                             EntityAlias = "component",
                             LinkEntities =
                             {
@@ -832,33 +839,25 @@ Would you like to open the file now ({e.Result})?
                                     LinkToEntityName = "connectionreference",
                                     Columns = new ColumnSet("connectionreferencedisplayname","connectionreferencelogicalname"),
                                     EntityAlias = "connectionreference",
-                                    JoinOperator = JoinOperator.LeftOuter,
+                                    JoinOperator = JoinOperator.Inner,
                                 }
                             }
                         });
-                    }
 
-                    var solutions = sourceService.RetrieveMultiple(sourceSolutionsQuery);
-                    var uniqueSolutions = new List<Entity>();
-
-                    foreach (var solution in solutions.Entities)
-                    {
-                        if (solution.Contains("connectionreference.connectionreferencelogicalname"))
+                        solutions = sourceService.RetrieveMultiple(sourceSolutionsQuery);
+                 
+                        foreach (var solution in solutions.Entities)
                         {
-                            var logicalName = solution.GetAttributeValue<AliasedValue>("connectionreference.connectionreferencelogicalname").Value.ToString();
-                            var displayName = solution.GetAttributeValue<AliasedValue>("connectionreference.connectionreferencedisplayname").Value.ToString();
-                            if (!connectionReferencesBySolution.ContainsKey(solution.Id))
+                            if (solution.Contains("connectionreference.connectionreferencelogicalname"))
                             {
-                                connectionReferencesBySolution.Add(solution.Id, new List<ConnectionReferenceInfo>());
+                                var logicalName = solution.GetAttributeValue<AliasedValue>("connectionreference.connectionreferencelogicalname").Value.ToString();
+                                var displayName = solution.GetAttributeValue<AliasedValue>("connectionreference.connectionreferencedisplayname").Value.ToString();
+                                if (!connectionReferencesBySolution.ContainsKey(solution.Id))
+                                {
+                                    connectionReferencesBySolution.Add(solution.Id, new List<ConnectionReferenceInfo>());
+                                }
+                                connectionReferencesBySolution[solution.Id].Add(new ConnectionReferenceInfo { DisplayName = displayName, LogicalName = logicalName });
                             }
-                            connectionReferencesBySolution[solution.Id].Add(new ConnectionReferenceInfo { DisplayName = displayName, LogicalName = logicalName });
-                        }
-
-                        if (uniqueSolutions.All(s => s.Id != solution.Id))
-                        {
-                            solution.Attributes.Remove("connectionreference.connectionreferencelogicalname");
-                            solution.Attributes.Remove("connectionreference.connectionreferencedisplayname");
-                            uniqueSolutions.Add(solution);
                         }
                     }
 
